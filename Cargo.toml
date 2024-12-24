@@ -1,0 +1,10 @@
+[package]
+name = "gpui-plot"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jakku Sakura <qjk2001@gmail.com>"]
+repository = "https://github.com/JakkuSakura/gpui-plot"
+description = "Plotting with gpui in Rust"
+license = "MIT"
+
+[dependencies]
