@@ -2,6 +2,9 @@
 
 Native plotting in Rust using the `gpui` library.
 
+**Pull Requests Welcomed**
+
+
 Can also make use of `plotters` for some of the figures.
 Zooming and panning is implemented
 
