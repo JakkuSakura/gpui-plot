@@ -134,14 +134,7 @@ impl GeometryAxes for Animation {
 }
 fn main_viewer(cx: &mut WindowContext) -> MainViewer {
     let figure = FigureModel::new("Example Figure".to_string());
-    // let axes = AxesModel::new(
-    //     AxesBounds::new(AxisRange::new(0.0, 100.0), AxisRange::new(0.0, 100.0)),
-    //     size2(10.0, 10.0),
-    // );
     let animation = Animation::new(0.0, 100.0, 0.1);
-    // axes.add_element(Box::new(animation));
-    // let axes = Arc::new(RwLock::new(axes));
-    // figure.plot.write().add_axes(axes.clone());
     let main_viewer = MainViewer::new(Arc::new(RwLock::new(figure)), animation, cx);
 
     main_viewer
