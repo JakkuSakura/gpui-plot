@@ -20,6 +20,10 @@ gpui-plot = { git = "https://github.com/JakkuSakura/gpui-plot" }
 
 ## Example
 
+This is an example of 2 animated plots on same canvas. one is native and the other is using plotters.
+You can see the FPS is 120 on my Macbook Pro.
+![Example](resources/example.png)
+
 ```rust
 use gpui::{div, prelude::*, App, AppContext, View, ViewContext, WindowContext, WindowOptions};
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
