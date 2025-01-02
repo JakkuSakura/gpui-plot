@@ -1,10 +1,19 @@
 [package]
 name = "gpui-plot"
-version = "0.1.0"
-edition = "2024"
+version = "0.1.1"
+edition = "2021"
 authors = ["Jakku Sakura <qjk2001@gmail.com>"]
 repository = "https://github.com/JakkuSakura/gpui-plot"
 description = "Plotting with gpui in Rust"
 license = "MIT"
 
 [dependencies]
+gpui = { git = "https://github.com/zed-industries/zed" }
+parking_lot = "0.12"
+plotters = { version = "0.3.7", features = ["default"], optional = true }
+plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", features = ["plotters"], optional = true }
+tracing = "0.1"
+
+[features]
+default = ["plotters"]
+plotters = ["dep:plotters-gpui", "dep:plotters"]

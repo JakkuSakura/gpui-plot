@@ -1,22 +1,3 @@
-# gpui-plot
-
-Plotting with gpui in Rust
-
-Native plotting in Rust using the `gpui` library.
-Can also make use of `plotters` for some of the figures.
-Zooming and panning is implemented
-
-## Usage
-
-```toml
-[dependencies]
-gpui = { git = "https://github.com/zed-industries/zed" }
-gpui-plot = { git = "https://github.com/JakkuSakura/gpui-plot" }
-```
-
-## Example
-
-```rust
 use gpui::{div, prelude::*, App, AppContext, View, ViewContext, WindowContext, WindowOptions};
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
@@ -65,6 +46,13 @@ impl MainViewer {
                         ))
                         .unwrap();
                 }
+
+                // chart
+                //     .configure_series_labels()
+                //     .background_style(&WHITE.mix(0.8))
+                //     .border_style(&BLACK)
+                //     .draw()
+                //     .unwrap();
             })
         }
         Self {
@@ -155,8 +143,7 @@ fn main() {
                 cx.new_view(move |_| view)
             },
         )
-            .unwrap();
+        .unwrap();
         cx.activate(true);
     });
 }
-```
