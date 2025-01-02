@@ -1,10 +1,14 @@
 # gpui-plot
 
-Plotting with gpui in Rust
-
 Native plotting in Rust using the `gpui` library.
+
 Can also make use of `plotters` for some of the figures.
 Zooming and panning is implemented
+
+Note: the version on crates.io is only a placeholder, as gpui is not published on crates.io yet. Please use the git
+version.
+
+https://github.com/JakkuSakura/gpui-plot
 
 ## Usage
 
