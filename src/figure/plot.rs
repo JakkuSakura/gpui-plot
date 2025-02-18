@@ -2,11 +2,7 @@ use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, SharedModel}
 use crate::figure::plotters::{PlottersAxes, PlottersFunc};
 use crate::fps::FpsModel;
 use crate::geometry::{AxisType, Text};
-use gpui::{
-    canvas, div, px, Bounds, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
-    MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, Styled,
-    ViewContext, WindowContext,
-};
+use gpui::{canvas, div, px, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, Styled, Window};
 use parking_lot::RwLock;
 use plotters::coord::Shift;
 use plotters::drawing::DrawingArea;
@@ -95,7 +91,7 @@ impl PlotViewer {
             axes.pan_begin(position);
         }
     }
-    pub fn pan(&mut self, event: &MouseMoveEvent, cx: &mut ViewContext<Self>) {
+    pub fn pan(&mut self, event: &MouseMoveEvent, _window: &mut Window, cx: &mut Context<Self>) {
         for axes in self.model.write().axes.iter_mut() {
             axes.pan(event);
         }
@@ -106,7 +102,7 @@ impl PlotViewer {
             axes.pan_end();
         }
     }
-    pub fn zoom(&mut self, zoom_point: Point<Pixels>, delta: f32, cx: &mut ViewContext<Self>) {
+    pub fn zoom(&mut self, zoom_point: Point<Pixels>, delta: f32, _window: &mut Window,  cx: &mut Context<Self>) {
         for axes in self.model.write().axes.iter_mut() {
             axes.zoom(zoom_point, delta);
         }
@@ -114,7 +110,7 @@ impl PlotViewer {
     }
 }
 impl Render for PlotViewer {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
         self.model.write().axes_index = 0;
         for axes in self.model.write().axes.iter_mut() {
             axes.get_model_mut().new_render();
@@ -123,11 +119,11 @@ impl Render for PlotViewer {
         div()
             .size_full()
             .child(
-                canvas(|_, _| (), {
+                canvas(|_, _window, _cx| (), {
                     let model = self.model.clone();
-                    move |bounds, _ele: (), cx| {
+                    move |bounds, _ele: (), window,  cx| {
                         model.write().bounds = bounds;
-                        let mut plot_cx = PlotContext { model, cx };
+                        let mut plot_cx = PlotContext { model, window, cx };
                         plot_cx.render_fps();
                         plot_cx.render_axes(bounds);
                     }
@@ -136,7 +132,7 @@ impl Render for PlotViewer {
             )
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(|this, ev: &MouseDownEvent, _cx| {
+                cx.listener(|this, ev: &MouseDownEvent, _window, _cx| {
                     let mut model = this.model.write();
                     if !model.panning {
                         model.panning = true;
@@ -145,16 +141,16 @@ impl Render for PlotViewer {
                     }
                 }),
             )
-            .on_mouse_move(cx.listener(|this, ev, cx| {
+            .on_mouse_move(cx.listener(|this, ev, window, cx| {
                 let model = this.model.read();
                 if model.panning {
                     drop(model);
-                    this.pan(ev, cx);
+                    this.pan(ev, window, cx);
                 }
             }))
             .on_mouse_up(
                 MouseButton::Left,
-                cx.listener(|this, _ev, _cx| {
+                cx.listener(|this, _ev,_window, _cx| {
                     let mut model = this.model.write();
 
                     if model.panning {
@@ -164,7 +160,7 @@ impl Render for PlotViewer {
                     }
                 }),
             )
-            .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, cx| {
+            .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, window, cx| {
                 let delta = match ev.delta {
                     ScrollDelta::Pixels(p) => {
                         println!("Scroll event captured: {:?}", p);
@@ -179,16 +175,17 @@ impl Render for PlotViewer {
                     "Zooming at position: {:?} with delta: {}",
                     ev.position, delta
                 );
-                this.zoom(ev.position, delta, cx);
+                this.zoom(ev.position, delta, window, cx);
             }))
     }
 }
 
-pub struct PlotContext<'a, 'b> {
+pub struct PlotContext<'a> {
     pub(crate) model: Arc<RwLock<PlotModel>>,
-    pub(crate) cx: &'a mut WindowContext<'b>,
+    pub(crate) window: &'a mut Window,
+    pub(crate) cx: &'a mut App
 }
-impl<'a, 'b> PlotContext<'a, 'b> {
+impl<'a> PlotContext<'a> {
     pub fn render_fps(&mut self) {
         let mut model = self.model.write();
         let fps = model.fps.next_fps();
@@ -200,13 +197,13 @@ impl<'a, 'b> PlotContext<'a, 'b> {
             size: px(12.0),
             text,
         }
-        .render(self.cx);
+        .render(self.window, self.cx);
     }
 
     pub fn render_axes(&mut self, bounds: Bounds<Pixels>) {
         let mut model = self.model.write();
         for axes in model.axes.iter_mut() {
-            axes.render_pixels(bounds, self.cx);
+            axes.render_pixels(bounds, self.window, self.cx);
         }
     }
 }

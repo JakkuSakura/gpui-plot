@@ -1,7 +1,6 @@
 use crate::figure::axes::AxesContext;
 use crate::geometry::{AxisType, GeometryAxes, GeometryPixels, Point2};
-use gpui::{point, Bounds, Hsla, Path, Pixels, Point, WindowContext};
-use tracing::warn;
+use gpui::{App, Bounds, Hsla, Pixels, Window};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LineDirection {
@@ -46,39 +45,19 @@ impl<X: AxisType, Y: AxisType> Line<X, Y> {
     }
 }
 impl Line<Pixels, Pixels> {
-    pub fn render(&mut self, cx: &mut WindowContext) {
-        if self.points.len() < 1 {
-            warn!("Line must have at least 1 points to render");
-            return;
+    pub fn render(&mut self, window: &mut Window, _cx: &mut App) {
+        let mut line = plotters_gpui::line::Line::new();
+        for point in self.points.iter().cloned() {
+            line.add_point(point.into());
         }
-        let first_point: Point<Pixels> = self.points[0].into();
-        let width = self.width;
+        let mut line = line.width(self.width).color(self.color);
+        line.render_pixels(window);
 
-        let mut angle = f32::atan2(
-            self.points.first().unwrap().y.0 - self.points.last().unwrap().y.0,
-            self.points.first().unwrap().x.0 - self.points.last().unwrap().x.0,
-        );
-        angle += std::f32::consts::FRAC_PI_2;
-        let shift = point(width * f32::cos(angle), width * f32::sin(angle));
-        let mut reversed_points = vec![first_point + shift];
-        let mut path = Path::new(first_point);
-        for p in self.points.iter().cloned().skip(1) {
-            let p: Point<Pixels> = p.into();
-            path.line_to(p);
-
-            reversed_points.push(p + shift);
-        }
-        // now do the reverse to close the path
-        for p in reversed_points.into_iter().rev() {
-            path.line_to(p);
-        }
-
-        cx.paint_path(path, self.color);
     }
 }
 impl GeometryPixels for Line<Pixels, Pixels> {
-    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, cx: &mut WindowContext) {
-        self.render(cx);
+    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        self.render(window, cx);
     }
 }
 impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
@@ -91,6 +70,7 @@ impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
             let point = cx.transform_point(point);
             line.add_point(point.into());
         }
-        line.render(cx.cx());
+        let (window, cx) = cx.cx.as_mut().unwrap();
+        line.render(window, cx);
     }
 }

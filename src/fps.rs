@@ -1,4 +1,4 @@
-use gpui::{IntoElement, Render, ViewContext};
+use gpui::{Context, IntoElement, Render, Window};
 use std::time::Instant;
 
 pub struct FpsModel {
@@ -40,7 +40,7 @@ impl FpsViewer {
     }
 }
 impl Render for FpsViewer {
-    fn render(&mut self, _cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let fps = self.model.next_fps();
         let text = format!("fps: {:.2}", fps);
         text

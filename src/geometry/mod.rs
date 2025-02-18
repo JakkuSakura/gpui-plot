@@ -1,6 +1,6 @@
 //! Useful geometric structures and functions used inside canvas
 
-use gpui::{Bounds, Pixels, WindowContext};
+use gpui::{App, Bounds, Pixels, Window};
 
 mod axis;
 mod line;
@@ -17,7 +17,7 @@ pub use text::*;
 
 /// Low-level Geometry
 pub trait GeometryPixels {
-    fn render_pixels(&mut self, bounds: Bounds<Pixels>, cx: &mut WindowContext);
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App);
 }
 
 /// High-level Geometry

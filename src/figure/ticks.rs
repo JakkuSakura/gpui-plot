@@ -1,6 +1,6 @@
 use crate::figure::axes::AxesModel;
 use crate::geometry::{point2, AxisType, GeometryPixels, Text};
-use gpui::{px, Bounds, Pixels, WindowContext};
+use gpui::{px, App, Bounds, Pixels, Window};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ impl<X: AxisType, Y: AxisType> TicksViewer<X, Y> {
     pub fn new(context: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
         Self { context }
     }
-    pub fn render(&mut self, cx: &mut WindowContext) {
+    pub fn render(&mut self, window: &mut Window, cx: &mut App) {
         let context = self.context.read();
         let size = px(12.0);
 
@@ -26,7 +26,7 @@ impl<X: AxisType, Y: AxisType> TicksViewer<X, Y> {
                 size,
                 text,
             }
-            .render(cx);
+            .render(window, cx);
         }
         for y in context.grid.grid_y_lines.iter().cloned() {
             let text = y.format();
@@ -38,12 +38,12 @@ impl<X: AxisType, Y: AxisType> TicksViewer<X, Y> {
                 size,
                 text,
             }
-            .render(cx);
+            .render(window, cx);
         }
     }
 }
 impl<X: AxisType, Y: AxisType> GeometryPixels for TicksViewer<X, Y> {
-    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, cx: &mut WindowContext) {
-        self.render(cx);
+    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        self.render(window, cx);
     }
 }

@@ -1,6 +1,6 @@
 use crate::figure::axes::{Axes, AxesContext, AxesModel, DynAxesModel};
 use crate::geometry::{AxisType, GeometryPixels};
-use gpui::{px, Bounds, Edges, MouseMoveEvent, Pixels, Point, WindowContext};
+use gpui::{px, App, Bounds, Edges, MouseMoveEvent, Pixels, Point, Window};
 use parking_lot::RwLock;
 use plotters::coord::Shift;
 use plotters::prelude::*;
@@ -62,12 +62,13 @@ impl<X: AxisType, Y: AxisType> PlottersAxes<X, Y> {
             draw,
         }
     }
-    pub fn plot(
+    pub fn plot<'a>(
         &mut self,
         bounds: Bounds<Pixels>,
-        cx: &mut WindowContext,
+        window: &'a mut Window,
+        cx: &'a mut App,
     ) -> Result<(), DrawingAreaErrorKind<plotters_gpui::Error>> {
-        let mut root = GpuiBackend::new(bounds, cx).into_drawing_area();
+        let mut root = GpuiBackend::new(bounds, window, cx).into_drawing_area();
         let cx1 = &mut AxesContext::new_without_context(self.model.clone());
         self.draw.render_axes(&mut root, cx1);
         root.present()?;
@@ -98,7 +99,7 @@ impl<X: AxisType, Y: AxisType> Axes for PlottersAxes<X, Y> {
     }
 }
 impl<X: AxisType, Y: AxisType> GeometryPixels for PlottersAxes<X, Y> {
-    fn render_pixels(&mut self, bounds: Bounds<Pixels>, cx: &mut WindowContext) {
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         let bounds = bounds.extend(Edges {
             top: px(0.0),
             right: -CONTENT_BOARDER,
@@ -112,7 +113,7 @@ impl<X: AxisType, Y: AxisType> GeometryPixels for PlottersAxes<X, Y> {
             left: -CONTENT_BOARDER,
         });
         self.model.write().update_scale(shrunk_bounds);
-        if let Err(err) = self.plot(bounds, cx) {
+        if let Err(err) = self.plot(bounds, window, cx) {
             error!("failed to plot: {}", err);
         }
     }

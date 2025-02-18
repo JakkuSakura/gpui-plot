@@ -13,7 +13,17 @@ parking_lot = "0.12"
 plotters = { version = "0.3.7", features = ["default"], optional = true }
 plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", features = ["plotters"], optional = true }
 tracing = "0.1"
+font-kit = { git = "https://github.com/JakkuSakura/font-kit-patched", features = ["source-fontconfig-dlopen"] }
 
 [features]
 default = ["plotters"]
 plotters = ["dep:plotters-gpui", "dep:plotters"]
+
+
+# this is to sync versions of font-kit
+[patch."https://github.com/zed-instustries/font-kit"]
+font-kit = { git = "https://github.com/JakkuSakura/font-kit-patched" }
+
+# because plotters' font-kit might fail
+[patch.crates-io]
+font-kit = { git = "https://github.com/JakkuSakura/font-kit-patched" }

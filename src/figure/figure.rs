@@ -1,6 +1,6 @@
 use crate::figure::plot::{PlotModel, PlotViewer};
 use crate::figure::text::centered_text;
-use gpui::{div, IntoElement, ParentElement, Render, Styled, View, ViewContext, VisualContext};
+use gpui::{div, App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window};
 use parking_lot::RwLock;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -46,7 +46,7 @@ impl FigureModel {
 
 pub struct FigureViewer {
     pub model: Arc<RwLock<FigureModel>>,
-    pub plots: Vec<View<PlotViewer>>,
+    pub plots: Vec<Entity<PlotViewer>>,
 }
 impl FigureViewer {
     pub fn new(model: Arc<RwLock<FigureModel>>) -> Self {
@@ -55,17 +55,17 @@ impl FigureViewer {
             plots: Vec::new(),
         }
     }
-    fn add_views(&mut self, cx: &mut ViewContext<Self>) {
+    fn add_views(&mut self, cx: &mut App) {
         for i in self.plots.len()..self.model.read().plots.len() {
             let plot_model = self.model.read().plots[i].clone();
             let view = PlotViewer::new(plot_model.clone());
-            let plot = cx.new_view(move |_| view);
+            let plot = cx.new(move |_| view);
             self.plots.push(plot);
         }
     }
 }
 impl Render for FigureViewer {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.add_views(cx);
         self.model.write().plot_index = 0;
         div()

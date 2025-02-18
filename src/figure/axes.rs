@@ -4,7 +4,7 @@ use crate::geometry::{
     AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryPixels, Line, Point2,
     Size2,
 };
-use gpui::{px, Bounds, Edges, MouseMoveEvent, Pixels, Point, WindowContext};
+use gpui::{px, App, Bounds, Edges, MouseMoveEvent, Pixels, Point, Window};
 use parking_lot::RwLock;
 use std::any::Any;
 use std::fmt::Debug;
@@ -129,7 +129,7 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
     pub fn new(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
         Self { model }
     }
-    pub fn paint(&mut self, cx: &mut WindowContext) {
+    pub fn paint(&mut self, window: &mut Window, cx: &mut App) {
         {
             let model = self.model.read();
             let shrunk_bounds = model.pixel_bounds.into_bounds();
@@ -139,11 +139,11 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
                 (shrunk_bounds.bottom_right(), shrunk_bounds.bottom_left()),
                 (shrunk_bounds.bottom_left(), shrunk_bounds.origin),
             ] {
-                Line::between_points(x.into(), y.into()).render(cx);
+                Line::between_points(x.into(), y.into()).render(window, cx);
             }
         }
 
-        let cx1 = &mut AxesContext::new(self.model.clone(), cx);
+        let cx1 = &mut AxesContext::new(self.model.clone(), window, cx);
         if {
             let should_update = self.model.read().grid.should_update_grid(cx1);
             should_update
@@ -153,7 +153,8 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
 
         let mut ticks = TicksViewer::new(self.model.clone());
         {
-            ticks.render(cx1.cx());
+            let (window, cx1) = cx1.cx.as_mut().unwrap();
+            ticks.render(window, cx1);
         }
         let mut grid = GridViewer::new(self.model.clone());
         {
@@ -194,7 +195,7 @@ pub trait Axes: GeometryPixels {
 }
 
 impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
-    fn render_pixels(&mut self, bounds: Bounds<Pixels>, cx: &mut WindowContext) {
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         let shrunk_bounds = bounds.extend(Edges {
             top: px(-0.0),
             right: -CONTENT_BOARDER,
@@ -202,7 +203,7 @@ impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
             left: -CONTENT_BOARDER,
         });
         self.model.write().update_scale(shrunk_bounds);
-        self.paint(cx);
+        self.paint(window, cx);
     }
 }
 
@@ -231,14 +232,18 @@ impl<X: AxisType, Y: AxisType> Axes for AxesViewer<X, Y> {
     }
 }
 
-pub struct AxesContext<'a, 'b, X: AxisType, Y: AxisType> {
+pub struct AxesContext<'a, X: AxisType, Y: AxisType> {
     pub model: Arc<RwLock<AxesModel<X, Y>>>,
     pub axes_bounds: AxesBounds<X, Y>,
     pub pixel_bounds: AxesBoundsPixels,
-    pub cx: Option<&'a mut WindowContext<'b>>,
+    pub cx: Option<(&'a mut Window, &'a mut App)>,
 }
-impl<'a, 'b, X: AxisType, Y: AxisType> AxesContext<'a, 'b, X, Y> {
-    pub fn new(model: Arc<RwLock<AxesModel<X, Y>>>, cx: &'a mut WindowContext<'b>) -> Self {
+impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
+    pub fn new(
+        model: Arc<RwLock<AxesModel<X, Y>>>,
+        window: &'a mut Window,
+        cx: &'a mut App,
+    ) -> Self {
         let model1 = model.read();
         Self {
             axes_bounds: model1.axes_bounds,
@@ -247,7 +252,7 @@ impl<'a, 'b, X: AxisType, Y: AxisType> AxesContext<'a, 'b, X, Y> {
                 drop(model1);
                 model
             },
-            cx: Some(cx),
+            cx: Some((window, cx)),
         }
     }
     pub fn new_without_context(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
@@ -268,7 +273,5 @@ impl<'a, 'b, X: AxisType, Y: AxisType> AxesContext<'a, 'b, X, Y> {
     pub fn plot(&mut self, mut element: impl GeometryAxes<X = X, Y = Y> + 'static) {
         element.render_axes(self);
     }
-    pub fn cx(&mut self) -> &mut WindowContext<'b> {
-        self.cx.as_mut().unwrap()
-    }
+
 }
