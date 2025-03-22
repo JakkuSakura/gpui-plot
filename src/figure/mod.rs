@@ -1,4 +1,5 @@
 pub mod axes;
+#[allow(clippy::module_inception)]
 pub mod figure;
 pub mod grid;
 pub mod plot;

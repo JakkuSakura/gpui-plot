@@ -1,6 +1,8 @@
 use crate::figure::plot::{PlotModel, PlotViewer};
 use crate::figure::text::centered_text;
-use gpui::{div, App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window};
+use gpui::{
+    div, App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window,
+};
 use parking_lot::RwLock;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -33,6 +35,7 @@ impl FigureModel {
         if index < self.plots.len() {
             &mut self.plots[index]
         } else {
+            #[allow(clippy::arc_with_non_send_sync)]
             let model = Arc::new(RwLock::new(PlotModel::new()));
             self.plots.push(model);
             self.plots.last_mut().unwrap()
@@ -43,7 +46,6 @@ impl FigureModel {
 /// A Figure is per definition of matplotlib: https://matplotlib.org/stable/users/explain/quick_start.html
 /// It contains a title, a canvas, 2 axes, and a legend.
 /// The canvas is the main area where the plot is drawn.
-
 pub struct FigureViewer {
     pub model: Arc<RwLock<FigureModel>>,
     pub plots: Vec<Entity<PlotViewer>>,

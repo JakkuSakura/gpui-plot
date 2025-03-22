@@ -7,6 +7,11 @@ pub struct FpsModel {
     pub last_fps: f64,
     pub frame_count: f32,
 }
+impl Default for FpsModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl FpsModel {
     pub fn new() -> Self {
         Self {
@@ -25,12 +30,16 @@ impl FpsModel {
             self.frame_count = 0.0;
             self.last_time = now;
         }
-        let fps = self.fps;
-        fps
+        self.fps
     }
 }
 pub struct FpsViewer {
     pub model: FpsModel,
+}
+impl Default for FpsViewer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 impl FpsViewer {
     pub fn new() -> Self {

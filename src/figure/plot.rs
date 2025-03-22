@@ -2,7 +2,11 @@ use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, SharedModel}
 use crate::figure::plotters::{PlottersAxes, PlottersFunc};
 use crate::fps::FpsModel;
 use crate::geometry::{AxisType, Text};
-use gpui::{canvas, div, px, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton, MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, Styled, Window};
+use gpui::{
+    canvas, div, px, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton,
+    MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta,
+    ScrollWheelEvent, Styled, Window,
+};
 use parking_lot::RwLock;
 use plotters::coord::Shift;
 use plotters::drawing::DrawingArea;
@@ -28,6 +32,11 @@ impl Debug for PlotModel {
             .finish()
     }
 }
+impl Default for PlotModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl PlotModel {
     pub fn new() -> Self {
         Self {
@@ -45,14 +54,13 @@ impl PlotModel {
     ) -> &SharedModel<AxesModel<X, Y>> {
         let index = self.axes_index;
         self.axes_index += 1;
-        let any;
-        if index < self.axes.len() {
-            any = self.axes[index].get_model();
+        let any = if index < self.axes.len() {
+            self.axes[index].get_model()
         } else {
             let axes = AxesViewer::new(model);
             self.axes.push(Box::new(axes));
-            any = self.axes.last_mut().unwrap().get_model();
-        }
+            self.axes.last_mut().unwrap().get_model()
+        };
         let model = any
             .as_any()
             .downcast_ref::<SharedModel<AxesModel<X, Y>>>()
@@ -102,7 +110,13 @@ impl PlotViewer {
             axes.pan_end();
         }
     }
-    pub fn zoom(&mut self, zoom_point: Point<Pixels>, delta: f32, _window: &mut Window,  cx: &mut Context<Self>) {
+    pub fn zoom(
+        &mut self,
+        zoom_point: Point<Pixels>,
+        delta: f32,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         for axes in self.model.write().axes.iter_mut() {
             axes.zoom(zoom_point, delta);
         }
@@ -121,7 +135,7 @@ impl Render for PlotViewer {
             .child(
                 canvas(|_, _window, _cx| (), {
                     let model = self.model.clone();
-                    move |bounds, _ele: (), window,  cx| {
+                    move |bounds, _ele: (), window, cx| {
                         model.write().bounds = bounds;
                         let mut plot_cx = PlotContext { model, window, cx };
                         plot_cx.render_fps();
@@ -150,7 +164,7 @@ impl Render for PlotViewer {
             }))
             .on_mouse_up(
                 MouseButton::Left,
-                cx.listener(|this, _ev,_window, _cx| {
+                cx.listener(|this, _ev, _window, _cx| {
                     let mut model = this.model.write();
 
                     if model.panning {
@@ -183,7 +197,7 @@ impl Render for PlotViewer {
 pub struct PlotContext<'a> {
     pub(crate) model: Arc<RwLock<PlotModel>>,
     pub(crate) window: &'a mut Window,
-    pub(crate) cx: &'a mut App
+    pub(crate) cx: &'a mut App,
 }
 impl<'a> PlotContext<'a> {
     pub fn render_fps(&mut self) {

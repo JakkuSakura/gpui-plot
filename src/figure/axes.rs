@@ -144,10 +144,9 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
         }
 
         let cx1 = &mut AxesContext::new(self.model.clone(), window, cx);
-        if {
-            let should_update = self.model.read().grid.should_update_grid(cx1);
-            should_update
-        } {
+        let should_update = self.model.read().grid.should_update_grid(cx1);
+        // kept aside to avoid deadlock
+        if should_update {
             self.model.write().grid.update_grid(cx1);
         }
 
@@ -273,5 +272,4 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
     pub fn plot(&mut self, mut element: impl GeometryAxes<X = X, Y = Y> + 'static) {
         element.render_axes(self);
     }
-
 }

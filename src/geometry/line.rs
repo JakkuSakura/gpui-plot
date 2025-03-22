@@ -15,7 +15,11 @@ pub struct Line<X: AxisType, Y: AxisType> {
     pub color: Hsla,
     pub direction: LineDirection,
 }
-
+impl Default for Line<Pixels, Pixels> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl<X: AxisType, Y: AxisType> Line<X, Y> {
     pub fn new() -> Self {
         Self {
@@ -52,7 +56,6 @@ impl Line<Pixels, Pixels> {
         }
         let mut line = line.width(self.width).color(self.color);
         line.render_pixels(window);
-
     }
 }
 impl GeometryPixels for Line<Pixels, Pixels> {
