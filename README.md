@@ -4,7 +4,6 @@ Native plotting in Rust using the `gpui` library.
 
 **Pull Requests Welcomed**
 
-
 Can also make use of `plotters` for some of the figures.
 Zooming and panning is implemented
 
@@ -28,7 +27,10 @@ You can see the FPS is 120 on my Macbook Pro.
 ![Example](resources/example.png)
 
 ```rust
-use gpui::{div, prelude::*, App, AppContext, View, ViewContext, WindowContext, WindowOptions};
+use gpui::{
+    div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Window, WindowBounds,
+    WindowOptions,
+};
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
 use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
@@ -40,14 +42,15 @@ use std::sync::Arc;
 struct MainViewer {
     model: Arc<RwLock<FigureModel>>,
     // animation: Animation,
-    figure: View<FigureViewer>,
+    figure: Entity<FigureViewer>,
 }
 
 impl MainViewer {
     fn new(
         model: Arc<RwLock<FigureModel>>,
         mut animation: Animation,
-        cx: &mut WindowContext,
+        _window: &mut Window,
+        cx: &mut App,
     ) -> Self {
         let axes_bounds = AxesBounds::new(AxisRange::new(0.0, 100.0), AxisRange::new(0.0, 100.0));
         let size = size2(10.0, 10.0);
@@ -79,7 +82,7 @@ impl MainViewer {
             })
         }
         Self {
-            figure: cx.new_view(|_| FigureViewer::new(model.clone())),
+            figure: cx.new(|_| FigureViewer::new(model.clone())),
             model,
             // animation,
         }
@@ -87,10 +90,9 @@ impl MainViewer {
 }
 
 impl Render for MainViewer {
-    fn render(&mut self, cx: &mut ViewContext<Self>) -> impl IntoElement {
-        cx.defer(move |_this, cx| {
-            cx.notify();
-        });
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let id = cx.entity_id();
+        cx.defer(move |app| app.notify(id));
 
         div()
             .size_full()
@@ -139,28 +141,25 @@ impl GeometryAxes for Animation {
         }
     }
 }
-fn main_viewer(cx: &mut WindowContext) -> MainViewer {
+fn main_viewer(window: &mut Window, cx: &mut App) -> MainViewer {
     let figure = FigureModel::new("Example Figure".to_string());
     let animation = Animation::new(0.0, 100.0, 0.1);
-    let main_viewer = MainViewer::new(Arc::new(RwLock::new(figure)), animation, cx);
+    let main_viewer = MainViewer::new(Arc::new(RwLock::new(figure)), animation, window, cx);
 
     main_viewer
 }
 
 fn main() {
-    App::new().run(move |cx: &mut AppContext| {
+    Application::new().run(|cx: &mut App| {
+        let bounds = Bounds::centered(None, size(px(800.0), px(600.0)), cx);
         cx.open_window(
             WindowOptions {
-                focus: true,
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            move |cx| {
-                let view = main_viewer(cx);
-                cx.new_view(move |_| view)
-            },
+            |window, cx| cx.new(|cx| main_viewer(window, cx)),
         )
             .unwrap();
-        cx.activate(true);
     });
 }
 ```
