@@ -1,4 +1,7 @@
-use gpui::{div, prelude::*, App, AppContext, Application, Entity, Window, WindowOptions};
+use gpui::{
+    div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Window, WindowBounds,
+    WindowOptions,
+};
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
 use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
@@ -60,9 +63,7 @@ impl MainViewer {
 impl Render for MainViewer {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let id = cx.entity_id();
-        cx.defer(move |app| {
-            app.notify(id)
-        });
+        cx.defer(move |app| app.notify(id));
 
         div()
             .size_full()
@@ -120,18 +121,15 @@ fn main_viewer(window: &mut Window, cx: &mut App) -> MainViewer {
 }
 
 fn main() {
-    Application::new().run(move |cx: &mut App| {
+    Application::new().run(|cx: &mut App| {
+        let bounds = Bounds::centered(None, size(px(800.0), px(600.0)), cx);
         cx.open_window(
             WindowOptions {
-                focus: true,
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            move |window, cx| {
-                let view = main_viewer(window, cx);
-                cx.new(move |_| view)
-            },
+            |window, cx| cx.new(|cx| main_viewer(window, cx)),
         )
         .unwrap();
-        cx.activate(true);
     });
 }
