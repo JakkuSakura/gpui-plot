@@ -177,7 +177,7 @@ impl Render for PlotViewer {
             .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, window, cx| {
                 let delta = match ev.delta {
                     ScrollDelta::Pixels(p) => {
-                        println!("Scroll event captured: {:?}", p);
+                        // println!("Scroll event captured: {:?}", p);
                         p.y.0 / 100.0
                     }
                     ScrollDelta::Lines(l) => {
@@ -185,10 +185,10 @@ impl Render for PlotViewer {
                         l.y / 10.0
                     }
                 };
-                println!(
-                    "Zooming at position: {:?} with delta: {}",
-                    ev.position, delta
-                );
+                // println!(
+                //     "Zooming at position: {:?} with delta: {}",
+                //     ev.position, delta
+                // );
                 this.zoom(ev.position, delta, window, cx);
             }))
     }

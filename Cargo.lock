@@ -1870,6 +1870,7 @@ dependencies = [
 name = "gpui-plot"
 version = "0.1.1"
 dependencies = [
+ "chrono",
  "gpui",
  "parking_lot",
  "plotters",

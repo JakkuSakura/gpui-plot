@@ -14,6 +14,9 @@ plotters = { version = "0.3.7", features = ["default"], optional = true }
 plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", features = ["plotters"], optional = true }
 tracing = "0.1"
 
+[dev-dependencies]
+chrono = "0.4"
+
 [features]
 default = ["plotters"]
 plotters = ["dep:plotters-gpui", "dep:plotters"]

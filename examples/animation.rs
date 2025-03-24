@@ -4,9 +4,14 @@ use gpui::{
 };
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
+use gpui_plot::figure::plotters::PlottersAxes;
 use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
 use parking_lot::RwLock;
+use plotters::coord::Shift;
 use plotters::prelude::*;
+use plotters_gpui::backend::GpuiBackend;
+use plotters_gpui::element::PlottersChart;
+use plotters_gpui::DrawingErrorKind;
 use std::sync::Arc;
 
 #[allow(unused)]
