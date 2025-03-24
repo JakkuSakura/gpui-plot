@@ -11,7 +11,6 @@ pub trait AxisType:
     + Clone
     + PartialOrd
     + Debug
-    + Display
     + Send
     + Sync
     + Add<Self::Delta, Output = Self>
@@ -19,10 +18,8 @@ pub trait AxisType:
     + Sub<Self, Output = Self::Delta>
     + 'static
 {
-    type Delta: Copy + Clone + PartialOrd + Debug + Display + Send + Sync + 'static;
-    fn format(&self) -> String {
-        format!("{}", self)
-    }
+    type Delta: Copy + Clone + PartialOrd + Debug + Send + Sync + 'static;
+    fn format(&self) -> String;
     fn delta_to_f32(value: Self::Delta) -> f32;
     fn delta_from_f32(value: f32) -> Self::Delta;
 }
@@ -52,7 +49,9 @@ impl AxisType for f64 {
 }
 impl AxisType for NaiveDate {
     type Delta = chrono::Duration;
-
+    fn format(&self) -> String {
+        self.to_string()
+    }
     fn delta_to_f32(value: Self::Delta) -> f32 {
         value.num_days() as f32
     }
@@ -61,27 +60,78 @@ impl AxisType for NaiveDate {
         chrono::Duration::days(value as i64)
     }
 }
-// impl AxisType for Time {
-//     type Delta = Duration;
-//     fn delta_to_f32(value: Self::Delta) -> f32 {
-//         value.nanos() as f32
-//     }
-//     fn delta_from_f32(value: f32) -> Self::Delta {
-//         Duration::from_nanos(value as _)
-//     }
-// }
-// impl AxisType for Duration {
-//     type Delta = Duration;
-//     fn delta_to_f32(value: Self::Delta) -> f32 {
-//         value.nanos() as f32
-//     }
-//     fn delta_from_f32(value: f32) -> Self::Delta {
-//         Duration::from_nanos(value as _)
-//     }
-// }
+impl<Tz> AxisType for chrono::DateTime<Tz>
+where
+    Tz: chrono::TimeZone + Copy + 'static,
+    Tz::Offset: Copy + Send + Sync + Display,
+{
+    type Delta = chrono::Duration;
+    fn format(&self) -> String {
+        self.to_string()
+    }
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.num_seconds() as f32
+    }
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        chrono::Duration::seconds(value as i64)
+    }
+}
+impl AxisType for chrono::NaiveDateTime {
+    type Delta = chrono::Duration;
+    fn format(&self) -> String {
+        self.to_string()
+    }
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.num_seconds() as f32
+    }
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        chrono::Duration::seconds(value as i64)
+    }
+}
+impl AxisType for chrono::NaiveTime {
+    type Delta = chrono::Duration;
+    fn format(&self) -> String {
+        self.to_string()
+    }
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.num_seconds() as f32
+    }
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        chrono::Duration::seconds(value as i64)
+    }
+}
+impl AxisType for chrono::Duration {
+    type Delta = chrono::Duration;
+    fn format(&self) -> String {
+        self.to_string()
+    }
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.num_seconds() as f32
+    }
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        chrono::Duration::seconds(value as i64)
+    }
+}
+
+impl AxisType for std::time::Duration {
+    type Delta = std::time::Duration;
+    fn format(&self) -> String {
+        format!("{:?}", self)
+    }
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.as_secs_f32()
+    }
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        std::time::Duration::from_secs_f32(value)
+    }
+}
+
 /// more for internal use
 impl AxisType for Pixels {
     type Delta = Pixels;
+    fn format(&self) -> String {
+        self.to_string()
+    }
     fn delta_to_f32(value: Self::Delta) -> f32 {
         value.0
     }
