@@ -1,6 +1,7 @@
 use crate::geometry::point::Point2;
 use crate::geometry::{point2, Size2};
 use crate::utils::math::display_double_smartly;
+use chrono::NaiveDate;
 use gpui::{px, Bounds, Pixels, Point, Size};
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Range, Sub};
@@ -47,6 +48,17 @@ impl AxisType for f64 {
     }
     fn delta_from_f32(value: f32) -> Self::Delta {
         value as f64
+    }
+}
+impl AxisType for NaiveDate {
+    type Delta = chrono::Duration;
+
+    fn delta_to_f32(value: Self::Delta) -> f32 {
+        value.num_days() as f32
+    }
+
+    fn delta_from_f32(value: f32) -> Self::Delta {
+        chrono::Duration::days(value as i64)
     }
 }
 // impl AxisType for Time {

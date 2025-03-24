@@ -16,7 +16,6 @@ use std::sync::Arc;
 
 pub struct PlotModel {
     pub panning: bool,
-    pub zooming: bool,
     pub fps: FpsModel,
     pub bounds: Bounds<Pixels>,
     pub axes: Vec<Box<dyn Axes>>,
@@ -26,7 +25,6 @@ impl Debug for PlotModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PlotModel")
             .field("panning", &self.panning)
-            .field("zooming", &self.zooming)
             .field("bounds", &self.bounds)
             .field("axes", &self.axes.len())
             .finish()
@@ -41,7 +39,6 @@ impl PlotModel {
     pub fn new() -> Self {
         Self {
             panning: false,
-            zooming: false,
             fps: FpsModel::new(),
             bounds: Bounds::default(),
             axes: Vec::new(),
@@ -178,10 +175,12 @@ impl Render for PlotViewer {
                 let delta = match ev.delta {
                     ScrollDelta::Pixels(p) => {
                         // println!("Scroll event captured: {:?}", p);
-                        p.y.0 / 100.0
+                        // Swipe swipe down to zoom in. This is aligned with Google Maps and some tools like Mac Mouse Fix or Scroll Inverter
+                        -p.y.0 / 100.0
                     }
                     ScrollDelta::Lines(l) => {
                         // println!("Scroll event in lines {:?}, ignoring.",&q);
+                        // Scroll up to zoom in
                         l.y / 10.0
                     }
                 };

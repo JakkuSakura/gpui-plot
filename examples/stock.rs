@@ -1,4 +1,3 @@
-use chrono::Datelike;
 use gpui::{
     div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Window, WindowBounds,
     WindowOptions,
@@ -10,13 +9,8 @@ use parking_lot::RwLock;
 use plotters::prelude::*;
 use std::sync::Arc;
 
-// fn parse_time(t: &str) -> chrono::NaiveDate {
-//     chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d").unwrap()
-// }
-fn parse_time(t: &str) -> f32 {
-    chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d")
-        .unwrap()
-        .num_days_from_ce() as f32
+fn parse_time(t: &str) -> chrono::NaiveDate {
+    chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d").unwrap()
 }
 
 struct StockChart {
@@ -59,6 +53,16 @@ impl StockChart {
         ];
 
         Self { data }
+    }
+    fn filter(
+        &self,
+        from: chrono::NaiveDate,
+        to: chrono::NaiveDate,
+    ) -> impl Iterator<Item = &(&'static str, f32, f32, f32, f32)> {
+        self.data.iter().filter(move |(date, _, _, _, _)| {
+            let date = parse_time(date);
+            date >= from && date <= to
+        })
     }
 }
 
@@ -105,14 +109,14 @@ impl MainViewer {
     fn new(model: Arc<RwLock<FigureModel>>, _window: &mut Window, cx: &mut App) -> Self {
         let stock_chart = StockChart::new();
         let (to_date, from_date) = (
-            parse_time(stock_chart.data[0].0) + 1.0,
-            parse_time(stock_chart.data[29].0) - 1.0,
+            parse_time(stock_chart.data[0].0) + chrono::Duration::days(1),
+            parse_time(stock_chart.data[29].0) - chrono::Duration::days(1),
         );
         let axes_bounds = AxesBounds::new(
             AxisRange::new(from_date, to_date),
-            AxisRange::new(0.0f32, 100.0f32),
+            AxisRange::new(100.0f32, 140.0f32),
         );
-        let size = size2(10.0, 10.0);
+        let size = size2(chrono::Duration::days(10), 10.0);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, size)));
         {
             let mut model = model.write();
@@ -135,18 +139,22 @@ impl MainViewer {
                     .unwrap();
 
                 chart
-                    .draw_series(stock_chart.data.iter().map(|x| {
-                        CandleStick::new(
-                            parse_time(x.0),
-                            x.1,
-                            x.2,
-                            x.3,
-                            x.4,
-                            GREEN.filled(),
-                            RED,
-                            15,
-                        )
-                    }))
+                    .draw_series(
+                        stock_chart
+                            .filter(cx.axes_bounds.x.min, cx.axes_bounds.x.max)
+                            .map(|x| {
+                                CandleStick::new(
+                                    parse_time(x.0),
+                                    x.1,
+                                    x.2,
+                                    x.3,
+                                    x.4,
+                                    GREEN.filled(),
+                                    RED,
+                                    15,
+                                )
+                            }),
+                    )
                     .unwrap();
             })
         }
