@@ -113,8 +113,8 @@ impl MainViewer {
             parse_time(stock_chart.data[29].0) - chrono::Duration::days(1),
         );
         let axes_bounds = AxesBounds::new(
-            AxisRange::new(from_date, to_date),
-            AxisRange::new(100.0f32, 140.0f32),
+            AxisRange::new(from_date, to_date).unwrap(),
+            AxisRange::new(100.0f32, 140.0f32).unwrap(),
         );
         let size = size2(chrono::Duration::days(10), 10.0);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, size)));

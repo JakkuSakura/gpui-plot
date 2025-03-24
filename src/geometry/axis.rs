@@ -22,6 +22,7 @@ pub trait AxisType:
     fn format(&self) -> String;
     fn delta_to_f32(value: Self::Delta) -> f32;
     fn delta_from_f32(value: f32) -> Self::Delta;
+    fn min_delta() -> Self::Delta;
 }
 impl AxisType for f32 {
     type Delta = f32;
@@ -33,6 +34,9 @@ impl AxisType for f32 {
     }
     fn delta_from_f32(value: f32) -> Self::Delta {
         value
+    }
+    fn min_delta() -> Self::Delta {
+        f32::MIN_POSITIVE * 2.0
     }
 }
 impl AxisType for f64 {
@@ -46,6 +50,9 @@ impl AxisType for f64 {
     fn delta_from_f32(value: f32) -> Self::Delta {
         value as f64
     }
+    fn min_delta() -> Self::Delta {
+        f64::MIN_POSITIVE * 2.0
+    }
 }
 impl AxisType for NaiveDate {
     type Delta = chrono::Duration;
@@ -53,11 +60,14 @@ impl AxisType for NaiveDate {
         self.to_string()
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.num_days() as f32
+        value.num_nanoseconds().expect("out of range") as f32
     }
 
     fn delta_from_f32(value: f32) -> Self::Delta {
-        chrono::Duration::days(value as i64)
+        chrono::Duration::nanoseconds(value as i64)
+    }
+    fn min_delta() -> Self::Delta {
+        chrono::Duration::days(2)
     }
 }
 impl<Tz> AxisType for chrono::DateTime<Tz>
@@ -70,10 +80,14 @@ where
         self.to_string()
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.num_seconds() as f32
+        value.num_nanoseconds().expect("out of range") as f32
     }
+
     fn delta_from_f32(value: f32) -> Self::Delta {
-        chrono::Duration::seconds(value as i64)
+        chrono::Duration::nanoseconds(value as i64)
+    }
+    fn min_delta() -> Self::Delta {
+        chrono::Duration::days(2)
     }
 }
 impl AxisType for chrono::NaiveDateTime {
@@ -82,10 +96,14 @@ impl AxisType for chrono::NaiveDateTime {
         self.to_string()
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.num_seconds() as f32
+        value.num_nanoseconds().expect("out of range") as f32
     }
+
     fn delta_from_f32(value: f32) -> Self::Delta {
-        chrono::Duration::seconds(value as i64)
+        chrono::Duration::nanoseconds(value as i64)
+    }
+    fn min_delta() -> Self::Delta {
+        chrono::Duration::nanoseconds(2)
     }
 }
 impl AxisType for chrono::NaiveTime {
@@ -94,10 +112,14 @@ impl AxisType for chrono::NaiveTime {
         self.to_string()
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.num_seconds() as f32
+        value.num_nanoseconds().expect("out of range") as f32
     }
+
     fn delta_from_f32(value: f32) -> Self::Delta {
-        chrono::Duration::seconds(value as i64)
+        chrono::Duration::nanoseconds(value as i64)
+    }
+    fn min_delta() -> Self::Delta {
+        chrono::Duration::nanoseconds(2)
     }
 }
 impl AxisType for chrono::Duration {
@@ -106,10 +128,14 @@ impl AxisType for chrono::Duration {
         self.to_string()
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.num_seconds() as f32
+        value.num_nanoseconds().expect("out of range") as f32
     }
+
     fn delta_from_f32(value: f32) -> Self::Delta {
-        chrono::Duration::seconds(value as i64)
+        chrono::Duration::nanoseconds(value as i64)
+    }
+    fn min_delta() -> Self::Delta {
+        chrono::Duration::nanoseconds(2)
     }
 }
 
@@ -119,10 +145,13 @@ impl AxisType for std::time::Duration {
         format!("{:?}", self)
     }
     fn delta_to_f32(value: Self::Delta) -> f32 {
-        value.as_secs_f32()
+        value.as_micros() as f32
     }
     fn delta_from_f32(value: f32) -> Self::Delta {
-        std::time::Duration::from_secs_f32(value)
+        std::time::Duration::from_micros(value as u64)
+    }
+    fn min_delta() -> Self::Delta {
+        std::time::Duration::from_micros(2)
     }
 }
 
@@ -137,6 +166,9 @@ impl AxisType for Pixels {
     }
     fn delta_from_f32(value: f32) -> Self::Delta {
         px(value)
+    }
+    fn min_delta() -> Self::Delta {
+        px(2.0)
     }
 }
 #[derive(Clone, Copy, Debug)]
@@ -198,13 +230,20 @@ impl<T: Clone> AxisRange<T> {
     }
 }
 impl<T: AxisType> AxisRange<T> {
-    pub fn new(min: T, max: T) -> Self {
-        Self {
+    pub fn new(min: T, max: T) -> Option<Self> {
+        let delta = max - min;
+        // protect against NaN
+        if !(delta >= T::min_delta()) {
+            return None;
+        }
+        let size_in_f32 = T::delta_to_f32(delta);
+        Some(Self {
             min,
             max,
-            size_in_f32: T::delta_to_f32(max - min),
-        }
+            size_in_f32,
+        })
     }
+
     pub fn clap(&self, value: T) -> T {
         if value < self.min {
             self.min

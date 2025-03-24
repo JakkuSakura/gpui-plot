@@ -28,7 +28,10 @@ impl MainViewer {
         _window: &mut Window,
         cx: &mut App,
     ) -> Self {
-        let axes_bounds = AxesBounds::new(AxisRange::new(0.0, 100.0), AxisRange::new(0.0, 100.0));
+        let axes_bounds = AxesBounds::new(
+            AxisRange::new(0.0, 100.0).unwrap(),
+            AxisRange::new(0.0, 100.0).unwrap(),
+        );
         let size = size2(10.0, 10.0);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, size)));
         {

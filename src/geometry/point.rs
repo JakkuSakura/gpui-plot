@@ -18,10 +18,9 @@ impl<X: AxisType, Y: AxisType> Point2<X, Y> {
         }
     }
     pub fn add_from_f32(self, other: Size<f32>) -> Self {
-        Self {
-            x: self.x + X::delta_from_f32(other.width),
-            y: self.y + Y::delta_from_f32(other.height),
-        }
+        let x = self.x + X::delta_from_f32(other.width);
+        let y = self.y + Y::delta_from_f32(other.height);
+        Self { x, y }
     }
 }
 impl<T: AxisType> From<Point2<T, T>> for (T, T) {

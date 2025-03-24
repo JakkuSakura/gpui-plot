@@ -96,15 +96,27 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
 
         // now we have (min, p) and (p, end)
         // we keep p to zero and scale the rest (min - p, 0) and (0, end - p)
-        let min_shifted = self.axes_bounds.min_point().sub_to_f32(zoom_point);
-        let max_shifted = self.axes_bounds.max_point().sub_to_f32(zoom_point);
+        let min_point = self.axes_bounds.min_point();
+        let max_point = self.axes_bounds.max_point();
+        let min_shifted = min_point.sub_to_f32(zoom_point);
+        let max_shifted = max_point.sub_to_f32(zoom_point);
         let min_zoomed = min_shifted * zoom_factor;
         let max_zoomed = max_shifted * zoom_factor;
+
         // map back to the view
         let min = zoom_point.add_from_f32(min_zoomed);
         let max = zoom_point.add_from_f32(max_zoomed);
-        self.axes_bounds.x = AxisRange::new(min.x, max.x);
-        self.axes_bounds.y = AxisRange::new(min.y, max.y);
+
+        let Some(x_range) = AxisRange::new(min.x, max.x) else {
+            eprintln!("Invalid zoom: min: {:?}, max: {:?}", min, max);
+            return;
+        };
+        let Some(y_range) = AxisRange::new(min.y, max.y) else {
+            eprintln!("Invalid zoom: min: {:?}, max: {:?}", min, max);
+            return;
+        };
+        self.axes_bounds.x = x_range;
+        self.axes_bounds.y = y_range;
     }
     pub fn update_scale(&mut self, shrunk_bounds: Bounds<Pixels>) {
         self.pixel_bounds = AxesBoundsPixels::from_bounds(shrunk_bounds);
