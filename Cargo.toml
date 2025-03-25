@@ -11,7 +11,7 @@ license = "MIT"
 gpui = { git = "https://github.com/zed-industries/zed", rev = "044eb7b99048e79da5aa3f2dd489ff3ed8f97a32" }
 parking_lot = "0.12"
 plotters = { version = "0.3.7", features = ["default"], optional = true }
-plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", rev = "4dfb17da7c7fe9007872aefc7a16642a39f07b8f", features = ["plotters"], optional = true }
+plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", rev = "23be474ba2963e651f710218cecd51022734fc65", features = ["plotters"], optional = true }
 tracing = "0.1"
 chrono = "0.4"
 
@@ -19,11 +19,9 @@ chrono = "0.4"
 default = ["plotters"]
 plotters = ["dep:plotters-gpui", "dep:plotters"]
 
-# this is to sync versions of font-kit
-[patch."https://github.com/zed-industries/font-kit"]
-font-kit = { git = "https://github.com/JakkuSakura/font-kit", branch = "gpui" }
 
-# because plotters' font-kit might fail on linux
+# because plotters' font-kit might fail
 [patch.crates-io]
 pathfinder_simd = { git = "https://github.com/theoparis/pathfinder.git" }
-font-kit = { git = "https://github.com/JakkuSakura/font-kit", branch = "gpui" }
+plotters = { git = "https://github.com/JakkuSakura/plotters", tag = "v0.3.7-gpui" }
+plotters-backend = { git = "https://github.com/JakkuSakura/plotters", tag = "v0.3.7-gpui" }
