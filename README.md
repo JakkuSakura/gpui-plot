@@ -18,6 +18,16 @@ https://github.com/JakkuSakura/gpui-plot
 [dependencies]
 gpui = { git = "https://github.com/zed-industries/zed" }
 gpui-plot = { git = "https://github.com/JakkuSakura/gpui-plot" }
+
+# this is to sync versions of font-kit
+[patch."https://github.com/zed-industries/font-kit"]
+font-kit = { git = "https://github.com/JakkuSakura/font-kit", branch = "gpui" }
+
+# because plotters' font-kit might fail on linux
+[patch.crates-io]
+pathfinder_simd = { git = "https://github.com/theoparis/pathfinder.git" }
+font-kit = { git = "https://github.com/JakkuSakura/font-kit", branch = "gpui" }
+
 ```
 
 ## Example

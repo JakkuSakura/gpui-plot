@@ -905,6 +905,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-text"
+version = "21.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a593227b66cbd4007b2a050dfdd9e1d1318311409c8d600dc82ba1b15ca9c130"
+dependencies = [
+ "core-foundation 0.10.0",
+ "core-graphics 0.24.0",
+ "foreign-types",
+ "libc",
+]
+
+[[package]]
 name = "core_maths"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1393,7 +1405,7 @@ dependencies = [
  "byteorder",
  "core-foundation 0.9.4",
  "core-graphics 0.23.2",
- "core-text",
+ "core-text 20.1.0",
  "dirs 5.0.1",
  "dwrote",
  "float-ord",
@@ -1411,14 +1423,13 @@ dependencies = [
 [[package]]
 name = "font-kit"
 version = "0.14.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b64b34f4efd515f905952d91bc185039863705592c0c53ae6d979805dd154520"
+source = "git+https://github.com/JakkuSakura/font-kit?branch=gpui#314abbd1fe04e0b09774aafda15466415c3415a7"
 dependencies = [
  "bitflags 2.9.0",
  "byteorder",
- "core-foundation 0.9.4",
- "core-graphics 0.23.2",
- "core-text",
+ "core-foundation 0.10.0",
+ "core-graphics 0.24.0",
+ "core-text 21.0.0",
  "dirs 5.0.1",
  "dwrote",
  "float-ord",
@@ -1802,7 +1813,7 @@ dependencies = [
  "core-foundation 0.9.4",
  "core-foundation-sys",
  "core-graphics 0.23.2",
- "core-text",
+ "core-text 20.1.0",
  "cosmic-text",
  "ctor",
  "derive_more",
@@ -3269,8 +3280,9 @@ dependencies = [
 [[package]]
 name = "plotters-gpui"
 version = "0.1.0"
-source = "git+https://github.com/JakkuSakura/plotters-gpui#be6171caeb6f90914f4498ecd286181460c9ec52"
+source = "git+https://github.com/JakkuSakura/plotters-gpui?rev=4dfb17da7c7fe9007872aefc7a16642a39f07b8f#4dfb17da7c7fe9007872aefc7a16642a39f07b8f"
 dependencies = [
+ "font-kit 0.14.2",
  "gpui",
  "parking_lot",
  "plotters",
