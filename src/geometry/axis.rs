@@ -233,6 +233,7 @@ impl<T: AxisType> AxisRange<T> {
     pub fn new(min: T, max: T) -> Option<Self> {
         let delta = max - min;
         // protect against NaN
+        #[allow(clippy::neg_cmp_op_on_partial_ord)]
         if !(delta >= T::min_delta()) {
             return None;
         }
