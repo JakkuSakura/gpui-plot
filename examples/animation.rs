@@ -4,14 +4,9 @@ use gpui::{
 };
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
-use gpui_plot::figure::plotters::PlottersAxes;
 use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
 use parking_lot::RwLock;
-use plotters::coord::Shift;
 use plotters::prelude::*;
-use plotters_gpui::backend::GpuiBackend;
-use plotters_gpui::element::PlottersChart;
-use plotters_gpui::DrawingErrorKind;
 use std::sync::Arc;
 
 #[allow(unused)]
@@ -22,12 +17,11 @@ struct MainViewer {
 }
 
 impl MainViewer {
-    fn new(
-        model: Arc<RwLock<FigureModel>>,
-        mut animation: Animation,
-        _window: &mut Window,
-        cx: &mut App,
-    ) -> Self {
+    fn new(_window: &mut Window, cx: &mut App) -> Self {
+        let model = FigureModel::new("Example Figure".to_string());
+        let model = Arc::new(RwLock::new(model));
+        let mut animation = Animation::new(0.0, 100.0, 0.1);
+
         let axes_bounds = AxesBounds::new(
             AxisRange::new(0.0, 100.0).unwrap(),
             AxisRange::new(0.0, 100.0).unwrap(),
@@ -120,13 +114,6 @@ impl GeometryAxes for Animation {
         }
     }
 }
-fn main_viewer(window: &mut Window, cx: &mut App) -> MainViewer {
-    let figure = FigureModel::new("Example Figure".to_string());
-    let animation = Animation::new(0.0, 100.0, 0.1);
-    let main_viewer = MainViewer::new(Arc::new(RwLock::new(figure)), animation, window, cx);
-
-    main_viewer
-}
 
 fn main() {
     Application::new().run(|cx: &mut App| {
@@ -136,7 +123,7 @@ fn main() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| main_viewer(window, cx)),
+            |window, cx| cx.new(|cx| MainViewer::new(window, cx)),
         )
         .unwrap();
     });

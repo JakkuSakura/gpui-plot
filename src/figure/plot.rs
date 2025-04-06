@@ -1,9 +1,9 @@
 use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, SharedModel};
 use crate::figure::plotters::{PlottersAxes, PlottersFunc};
 use crate::fps::FpsModel;
-use crate::geometry::{AxisType, Text};
+use crate::geometry::AxisType;
 use gpui::{
-    canvas, div, px, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton,
+    canvas, div, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton,
     MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta,
     ScrollWheelEvent, Styled, Window,
 };
@@ -51,7 +51,8 @@ impl PlotModel {
     ) -> &SharedModel<AxesModel<X, Y>> {
         let index = self.axes_index;
         self.axes_index += 1;
-        let any = if index < self.axes.len() {
+        let old_axes = index < self.axes.len();
+        let any = if old_axes {
             self.axes[index].get_model()
         } else {
             let axes = AxesViewer::new(model);
@@ -62,7 +63,9 @@ impl PlotModel {
             .as_any()
             .downcast_ref::<SharedModel<AxesModel<X, Y>>>()
             .unwrap();
-        model.write().elements.clear();
+        if old_axes {
+            model.write().elements.clear();
+        }
         model
     }
     #[cfg(feature = "plotters")]
@@ -135,7 +138,6 @@ impl Render for PlotViewer {
                     move |bounds, _ele: (), window, cx| {
                         model.write().bounds = bounds;
                         let mut plot_cx = PlotContext { model, window, cx };
-                        plot_cx.render_fps();
                         plot_cx.render_axes(bounds);
                     }
                 })
@@ -199,20 +201,6 @@ pub struct PlotContext<'a> {
     pub(crate) cx: &'a mut App,
 }
 impl<'a> PlotContext<'a> {
-    pub fn render_fps(&mut self) {
-        let mut model = self.model.write();
-        let fps = model.fps.next_fps();
-        let text = format!("fps: {:.2}", fps);
-        let mut origin: Point<Pixels> = model.bounds.origin;
-        origin.y += px(3.0);
-        Text {
-            origin: origin.into(),
-            size: px(12.0),
-            text,
-        }
-        .render(self.window, self.cx);
-    }
-
     pub fn render_axes(&mut self, bounds: Bounds<Pixels>) {
         let mut model = self.model.write();
         for axes in model.axes.iter_mut() {

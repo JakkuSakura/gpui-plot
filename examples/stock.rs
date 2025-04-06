@@ -106,7 +106,9 @@ struct MainViewer {
 }
 
 impl MainViewer {
-    fn new(model: Arc<RwLock<FigureModel>>, _window: &mut Window, cx: &mut App) -> Self {
+    fn new(_window: &mut Window, cx: &mut App) -> Self {
+        let figure = FigureModel::new("Example Figure".to_string());
+        let mut model = Arc::new(RwLock::new(figure));
         let stock_chart = StockChart::new();
         let (to_date, from_date) = (
             parse_time(stock_chart.data[0].0) + chrono::Duration::days(1),
@@ -179,13 +181,6 @@ impl Render for MainViewer {
     }
 }
 
-fn main_viewer(window: &mut Window, cx: &mut App) -> MainViewer {
-    let figure = FigureModel::new("Example Figure".to_string());
-    let main_viewer = MainViewer::new(Arc::new(RwLock::new(figure)), window, cx);
-
-    main_viewer
-}
-
 fn main() {
     Application::new().run(|cx: &mut App| {
         let bounds = Bounds::centered(None, size(px(800.0), px(600.0)), cx);
@@ -194,7 +189,7 @@ fn main() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| main_viewer(window, cx)),
+            |window, cx| cx.new(|cx| MainViewer::new(window, cx)),
         )
         .unwrap();
     });
