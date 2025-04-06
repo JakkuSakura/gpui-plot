@@ -19,7 +19,6 @@ pub struct PlotModel {
     pub fps: FpsModel,
     pub bounds: Bounds<Pixels>,
     pub axes: Vec<Box<dyn Axes>>,
-    pub axes_index: usize,
 }
 impl Debug for PlotModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -42,30 +41,25 @@ impl PlotModel {
             fps: FpsModel::new(),
             bounds: Bounds::default(),
             axes: Vec::new(),
-            axes_index: 0,
         }
     }
+    pub fn clear_axes(&mut self) {
+        self.axes.clear();
+    }
+
     pub fn add_axes<X: AxisType, Y: AxisType>(
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
     ) -> &SharedModel<AxesModel<X, Y>> {
-        let index = self.axes_index;
-        self.axes_index += 1;
-        let old_axes = index < self.axes.len();
-        let any = if old_axes {
-            self.axes[index].get_model()
-        } else {
-            let axes = AxesViewer::new(model);
-            self.axes.push(Box::new(axes));
-            self.axes.last_mut().unwrap().get_model()
-        };
+        let axes = AxesViewer::new(model);
+        self.axes.push(Box::new(axes));
+        let any = self.axes.last_mut().unwrap().get_model();
+
         let model = any
             .as_any()
             .downcast_ref::<SharedModel<AxesModel<X, Y>>>()
             .unwrap();
-        if old_axes {
-            model.write().elements.clear();
-        }
+
         model
     }
     #[cfg(feature = "plotters")]
@@ -74,15 +68,9 @@ impl PlotModel {
         model: SharedModel<AxesModel<X, Y>>,
         draw: impl FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>) + 'static,
     ) {
-        let index = self.axes_index;
-        self.axes_index += 1;
         let axes = PlottersAxes::new(model, Box::new(PlottersFunc::new(draw)));
 
-        if index < self.axes.len() {
-            self.axes[index] = Box::new(axes);
-        } else {
-            self.axes.push(Box::new(axes));
-        }
+        self.axes.push(Box::new(axes));
     }
 }
 
@@ -125,7 +113,6 @@ impl PlotViewer {
 }
 impl Render for PlotViewer {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
-        self.model.write().axes_index = 0;
         for axes in self.model.write().axes.iter_mut() {
             axes.get_model_mut().new_render();
         }
