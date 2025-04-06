@@ -175,6 +175,9 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
         for element in self.model.read().elements.iter() {
             element.write().render_axes(cx1);
         }
+        if let Some(new_axes_bounds) = cx1.new_axes_bounds.take() {
+            self.model.write().axes_bounds = new_axes_bounds;
+        }
     }
 }
 pub type SharedModel<T> = Arc<RwLock<T>>;
@@ -244,10 +247,11 @@ impl<X: AxisType, Y: AxisType> Axes for AxesViewer<X, Y> {
 }
 
 pub struct AxesContext<'a, X: AxisType, Y: AxisType> {
-    pub model: Arc<RwLock<AxesModel<X, Y>>>,
+    pub model: SharedModel<AxesModel<X, Y>>,
     pub axes_bounds: AxesBounds<X, Y>,
     pub pixel_bounds: AxesBoundsPixels,
     pub cx: Option<(&'a mut Window, &'a mut App)>,
+    pub new_axes_bounds: Option<AxesBounds<X, Y>>,
 }
 impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
     pub fn new(
@@ -264,6 +268,7 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
                 model
             },
             cx: Some((window, cx)),
+            new_axes_bounds: None,
         }
     }
     pub fn new_without_context(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
@@ -276,6 +281,7 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
                 model
             },
             cx: None,
+            new_axes_bounds: None,
         }
     }
     pub fn transform_point(&self, point: Point2<X, Y>) -> Point<Pixels> {
