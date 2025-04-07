@@ -1,9 +1,9 @@
-use std::cmp::Ordering;
 use crate::geometry::point::Point2;
 use crate::geometry::{point2, Size2};
 use crate::utils::math::display_double_smartly;
 use chrono::NaiveDate;
 use gpui::{px, Bounds, Pixels, Point, Size};
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::ops::{Add, Range, Sub};
 
@@ -256,7 +256,7 @@ impl<T: AxisType> AxisRange<T> {
             value
         }
     }
-    pub fn in_range(&self, value: T) -> bool {
+    pub fn contains(&self, value: T) -> bool {
         value >= self.min && value <= self.max
     }
     pub fn difference(&self) -> T::Delta {

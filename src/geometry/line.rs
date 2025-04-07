@@ -1,5 +1,5 @@
 use crate::figure::axes::AxesContext;
-use crate::geometry::{AxisType, GeometryAxes, GeometryPixels, Point2};
+use crate::geometry::{AxisRange, AxisType, GeometryAxes, GeometryPixels, Point2};
 use gpui::{App, Bounds, Hsla, Pixels, Window};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -49,31 +49,76 @@ impl<X: AxisType, Y: AxisType> Line<X, Y> {
     }
 }
 impl Line<Pixels, Pixels> {
-    pub fn render(&mut self, window: &mut Window, _cx: &mut App) {
+    pub fn render(
+        &mut self,
+        window: &mut Window,
+        _cx: &mut App,
+        pixel_bounds: Option<Bounds<Pixels>>,
+    ) {
         let mut line = plotters_gpui::line::Line::new();
         for point in self.points.iter().cloned() {
-            line.add_point(point.into());
+            let point = point.into();
+            if let Some(bounds) = pixel_bounds {
+                // Check if the point is within the bounds
+                if !bounds.contains(&point) {
+                    continue;
+                }
+            }
+
+            line.add_point(point);
         }
         let mut line = line.width(self.width).color(self.color);
         line.render_pixels(window);
     }
 }
 impl GeometryPixels for Line<Pixels, Pixels> {
-    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
-        self.render(window, cx);
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        self.render(window, cx, Some(bounds));
     }
 }
 impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
     type X = X;
     type Y = Y;
-
+    fn get_x_range(&self) -> Option<AxisRange<Self::X>> {
+        if self.points.is_empty() {
+            return None;
+        }
+        let mut min = self.points[0].x;
+        let mut max = self.points[0].x;
+        for point in self.points.iter() {
+            if point.x < min {
+                min = point.x;
+            }
+            if point.x > max {
+                max = point.x;
+            }
+        }
+        AxisRange::new(min, max)
+    }
+    fn get_y_range(&self) -> Option<AxisRange<Self::Y>> {
+        if self.points.is_empty() {
+            return None;
+        }
+        let mut min = self.points[0].y;
+        let mut max = self.points[0].y;
+        for point in self.points.iter() {
+            if point.y < min {
+                min = point.y;
+            }
+            if point.y > max {
+                max = point.y;
+            }
+        }
+        AxisRange::new(min, max)
+    }
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
         let mut line = Line::new();
         for point in self.points.iter().cloned() {
             let point = cx.transform_point(point);
             line.add_point(point.into());
         }
+        let pixel_bounds = cx.pixel_bounds.into_bounds();
         let (window, cx) = cx.cx.as_mut().unwrap();
-        line.render(window, cx);
+        line.render(window, cx, Some(pixel_bounds));
     }
 }

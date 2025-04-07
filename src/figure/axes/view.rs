@@ -24,7 +24,7 @@ impl<X: AxisType, Y: AxisType> AxesView<X, Y> {
                 (shrunk_bounds.bottom_right(), shrunk_bounds.bottom_left()),
                 (shrunk_bounds.bottom_left(), shrunk_bounds.origin),
             ] {
-                Line::between_points(x.into(), y.into()).render(window, cx);
+                Line::between_points(x.into(), y.into()).render(window, cx, Some(shrunk_bounds));
             }
         }
 
@@ -47,9 +47,6 @@ impl<X: AxisType, Y: AxisType> AxesView<X, Y> {
 
         for element in self.model.read().elements.iter() {
             element.write().render_axes(cx1);
-        }
-        if let Some(new_axes_bounds) = cx1.new_axes_bounds.take() {
-            self.model.write().axes_bounds = new_axes_bounds;
         }
     }
 }

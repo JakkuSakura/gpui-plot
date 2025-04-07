@@ -65,14 +65,14 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
             .iter_step_by(density.width)
             .collect();
         self.grid_x_lines
-            .retain(|x| axes_bounds.axes_bounds.x.in_range(*x));
+            .retain(|x| axes_bounds.axes_bounds.x.contains(*x));
         self.grid_y_lines = axes_bounds
             .axes_bounds
             .y
             .iter_step_by(density.height)
             .collect();
         self.grid_y_lines
-            .retain(|y| axes_bounds.axes_bounds.y.in_range(*y));
+            .retain(|y| axes_bounds.axes_bounds.y.contains(*y));
     }
 }
 #[derive(Clone, Debug)]

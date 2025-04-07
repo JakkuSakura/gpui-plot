@@ -30,7 +30,6 @@ pub struct AxesContext<'a, X: AxisType, Y: AxisType> {
     pub axes_bounds: AxesBounds<X, Y>,
     pub pixel_bounds: AxesBoundsPixels,
     pub cx: Option<(&'a mut Window, &'a mut App)>,
-    pub new_axes_bounds: Option<AxesBounds<X, Y>>,
 }
 impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
     pub fn new(
@@ -47,7 +46,6 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
                 model
             },
             cx: Some((window, cx)),
-            new_axes_bounds: None,
         }
     }
     pub fn new_without_context(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
@@ -60,7 +58,6 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
                 model
             },
             cx: None,
-            new_axes_bounds: None,
         }
     }
     pub fn transform_point(&self, point: Point2<X, Y>) -> Point<Pixels> {
