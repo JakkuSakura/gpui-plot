@@ -385,6 +385,9 @@ impl<X: AxisType, Y: AxisType> AxesBounds<X, Y> {
     pub fn max_point(&self) -> Point2<X, Y> {
         point2(self.x.max, self.y.max)
     }
+    pub fn contains(&self, point: Point2<X, Y>) -> bool {
+        self.x.contains(point.x) && self.y.contains(point.y)
+    }
 }
 
 impl<X: AxisType, Y: AxisType> Add<Size2<X::Delta, Y::Delta>> for AxesBounds<X, Y> {

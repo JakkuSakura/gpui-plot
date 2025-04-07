@@ -77,6 +77,6 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
         element.render_axes(self);
     }
     pub fn contains(&self, point: Point2<X, Y>) -> bool {
-        self.axes_bounds.x.contains(point.x) && self.axes_bounds.y.contains(point.y)
+        self.axes_bounds.contains(point)
     }
 }
