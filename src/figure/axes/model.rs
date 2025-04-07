@@ -1,16 +1,29 @@
-use crate::figure::grid::{GridModel, GridViewer};
-use crate::figure::ticks::TicksViewer;
+use crate::figure::grid::GridModel;
+use crate::figure::SharedModel;
 use crate::geometry::{
-    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryPixels, Line, Point2,
-    Size2,
+    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, Point2, Size2,
 };
-use gpui::{px, App, Bounds, Edges, MouseMoveEvent, Pixels, Point, Window};
+use gpui::{Bounds, MouseMoveEvent, Pixels, Point};
 use parking_lot::RwLock;
 use std::any::Any;
 use std::fmt::Debug;
-use std::sync::Arc;
 
-pub const CONTENT_BOARDER: Pixels = px(30.0);
+pub trait DynAxesModel {
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn new_render(&mut self);
+}
+impl<X: AxisType, Y: AxisType> DynAxesModel for SharedModel<AxesModel<X, Y>> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+    fn new_render(&mut self) {
+        self.write().event_processed = false;
+    }
+}
 
 pub(crate) struct PanState<X: AxisType, Y: AxisType> {
     initial_axes_bounds: AxesBounds<X, Y>,
@@ -168,167 +181,5 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             }
         }
         self.axes_bounds = new_axes_bounds;
-    }
-}
-
-pub struct AxesViewer<X: AxisType, Y: AxisType> {
-    pub model: Arc<RwLock<AxesModel<X, Y>>>,
-}
-impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
-    pub fn new(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
-        Self { model }
-    }
-    pub fn paint(&mut self, window: &mut Window, cx: &mut App) {
-        {
-            let model = self.model.read();
-            let shrunk_bounds = model.pixel_bounds.into_bounds();
-            for (x, y) in [
-                (shrunk_bounds.origin, shrunk_bounds.top_right()),
-                (shrunk_bounds.top_right(), shrunk_bounds.bottom_right()),
-                (shrunk_bounds.bottom_right(), shrunk_bounds.bottom_left()),
-                (shrunk_bounds.bottom_left(), shrunk_bounds.origin),
-            ] {
-                Line::between_points(x.into(), y.into()).render(window, cx);
-            }
-        }
-
-        let cx1 = &mut AxesContext::new(self.model.clone(), window, cx);
-        let should_update = self.model.read().grid.should_update_grid(cx1);
-        // kept aside to avoid deadlock
-        if should_update {
-            self.model.write().grid.update_grid(cx1);
-        }
-
-        let mut ticks = TicksViewer::new(self.model.clone());
-        {
-            let (window, cx1) = cx1.cx.as_mut().unwrap();
-            ticks.render(window, cx1);
-        }
-        let mut grid = GridViewer::new(self.model.clone());
-        {
-            grid.render_axes(cx1);
-        }
-
-        for element in self.model.read().elements.iter() {
-            element.write().render_axes(cx1);
-        }
-        if let Some(new_axes_bounds) = cx1.new_axes_bounds.take() {
-            self.model.write().axes_bounds = new_axes_bounds;
-        }
-    }
-}
-pub type SharedModel<T> = Arc<RwLock<T>>;
-
-pub trait DynAxesModel {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn new_render(&mut self);
-}
-impl<X: AxisType, Y: AxisType> DynAxesModel for SharedModel<AxesModel<X, Y>> {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-    fn new_render(&mut self) {
-        self.write().event_processed = false;
-    }
-}
-
-pub trait Axes: GeometryPixels {
-    fn update(&mut self);
-    fn get_model(&self) -> &dyn DynAxesModel;
-    fn get_model_mut(&mut self) -> &mut dyn DynAxesModel;
-    fn pan_begin(&mut self, position: Point<Pixels>);
-    fn pan(&mut self, event: &MouseMoveEvent);
-    fn pan_end(&mut self);
-    fn zoom(&mut self, point: Point<Pixels>, delta: f32);
-}
-
-impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
-    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
-        let shrunk_bounds = bounds.extend(Edges {
-            top: px(-0.0),
-            right: -CONTENT_BOARDER,
-            bottom: -CONTENT_BOARDER,
-            left: -CONTENT_BOARDER,
-        });
-        self.model.write().update_scale(shrunk_bounds);
-        self.paint(window, cx);
-    }
-}
-
-impl<X: AxisType, Y: AxisType> Axes for AxesViewer<X, Y> {
-    fn update(&mut self) {
-        self.model.write().update()
-    }
-    fn get_model(&self) -> &dyn DynAxesModel {
-        &self.model
-    }
-
-    fn get_model_mut(&mut self) -> &mut dyn DynAxesModel {
-        &mut self.model
-    }
-
-    fn pan_begin(&mut self, position: Point<Pixels>) {
-        self.model.write().pan_begin(position);
-    }
-
-    fn pan(&mut self, event: &MouseMoveEvent) {
-        self.model.write().pan(event);
-    }
-
-    fn pan_end(&mut self) {
-        self.model.write().pan_end();
-    }
-    fn zoom(&mut self, point: Point<Pixels>, delta: f32) {
-        self.model.write().zoom(point, delta);
-    }
-}
-
-pub struct AxesContext<'a, X: AxisType, Y: AxisType> {
-    pub model: SharedModel<AxesModel<X, Y>>,
-    pub axes_bounds: AxesBounds<X, Y>,
-    pub pixel_bounds: AxesBoundsPixels,
-    pub cx: Option<(&'a mut Window, &'a mut App)>,
-    pub new_axes_bounds: Option<AxesBounds<X, Y>>,
-}
-impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
-    pub fn new(
-        model: Arc<RwLock<AxesModel<X, Y>>>,
-        window: &'a mut Window,
-        cx: &'a mut App,
-    ) -> Self {
-        let model1 = model.read();
-        Self {
-            axes_bounds: model1.axes_bounds,
-            pixel_bounds: model1.pixel_bounds,
-            model: {
-                drop(model1);
-                model
-            },
-            cx: Some((window, cx)),
-            new_axes_bounds: None,
-        }
-    }
-    pub fn new_without_context(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
-        let model1 = model.read();
-        Self {
-            axes_bounds: model1.axes_bounds,
-            pixel_bounds: model1.pixel_bounds,
-            model: {
-                drop(model1);
-                model
-            },
-            cx: None,
-            new_axes_bounds: None,
-        }
-    }
-    pub fn transform_point(&self, point: Point2<X, Y>) -> Point<Pixels> {
-        self.axes_bounds.transform_point(self.pixel_bounds, point)
-    }
-    pub fn plot(&mut self, mut element: impl GeometryAxes<X = X, Y = Y> + 'static) {
-        element.render_axes(self);
     }
 }

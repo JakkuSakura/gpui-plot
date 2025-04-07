@@ -8,7 +8,7 @@ use plotters_gpui::backend::GpuiBackend;
 use std::sync::Arc;
 use tracing::error;
 
-pub const CONTENT_BOARDER: Pixels = px(30.0);
+const CONTENT_BOARDER: Pixels = px(30.0);
 
 pub trait GeometryAxesPlotters {
     type X: AxisType;
@@ -76,9 +76,7 @@ impl<X: AxisType, Y: AxisType> PlottersAxes<X, Y> {
     }
 }
 impl<X: AxisType, Y: AxisType> Axes for PlottersAxes<X, Y> {
-    fn update(&mut self) {
-        
-    }
+    fn update(&mut self) {}
     fn get_model(&self) -> &dyn DynAxesModel {
         &self.model
     }

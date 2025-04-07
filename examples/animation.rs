@@ -2,7 +2,8 @@ use gpui::{
     div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Window, WindowBounds,
     WindowOptions,
 };
-use gpui_plot::figure::axes::{AxesContext, AxesModel};
+use gpui_plot::figure::axes::AxesModel;
+use gpui_plot::figure::axes::AxesContext;
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
 use gpui_plot::figure::grid::GridModel;
 use gpui_plot::geometry::{point2, AxesBounds, AxisRange, GeometryAxes, Line};

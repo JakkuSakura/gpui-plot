@@ -1,5 +1,5 @@
-use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, SharedModel};
-use crate::figure::plotters::{PlottersAxes, PlottersFunc};
+use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, PlottersAxes, PlottersFunc};
+use crate::figure::SharedModel;
 use crate::fps::FpsModel;
 use crate::geometry::AxisType;
 use gpui::{
