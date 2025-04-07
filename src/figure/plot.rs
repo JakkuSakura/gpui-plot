@@ -72,6 +72,11 @@ impl PlotModel {
 
         self.axes.push(Box::new(axes));
     }
+    pub fn update(&mut self) {
+        for axes in self.axes.iter_mut() {
+            axes.update();
+        }
+    }
 }
 
 pub struct PlotViewer {

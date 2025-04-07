@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use crate::geometry::point::Point2;
 use crate::geometry::{point2, Size2};
 use crate::utils::math::display_double_smartly;
@@ -229,7 +230,6 @@ impl<T: Clone> AxisRange<T> {
     pub fn to_range(&self) -> Range<T> {
         self.min.clone()..self.max.clone()
     }
-
 }
 impl<T: AxisType> AxisRange<T> {
     pub fn new(min: T, max: T) -> Option<Self> {
@@ -286,6 +286,25 @@ impl<T: AxisType> AxisRange<T> {
             let result = current;
             current = current + step;
             Some(result)
+        })
+    }
+    pub fn union(&self, other: &Self) -> Option<Self> {
+        let min = match self.min.partial_cmp(&other.min)? {
+            Ordering::Less => self.min,
+            Ordering::Greater => other.min,
+            Ordering::Equal => self.min,
+        };
+        let max = match self.max.partial_cmp(&other.max)? {
+            Ordering::Less => other.max,
+            Ordering::Greater => self.max,
+            Ordering::Equal => self.max,
+        };
+        let delta = max - min;
+        let size_in_f32 = T::delta_to_f32(delta);
+        Some(Self {
+            min,
+            max,
+            size_in_f32,
         })
     }
 }

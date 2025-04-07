@@ -76,6 +76,9 @@ impl<X: AxisType, Y: AxisType> PlottersAxes<X, Y> {
     }
 }
 impl<X: AxisType, Y: AxisType> Axes for PlottersAxes<X, Y> {
+    fn update(&mut self) {
+        
+    }
     fn get_model(&self) -> &dyn DynAxesModel {
         &self.model
     }

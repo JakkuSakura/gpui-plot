@@ -10,7 +10,6 @@ use std::sync::Arc;
 pub struct FigureModel {
     pub title: String,
     pub plots: Vec<Arc<RwLock<PlotModel>>>,
-    pub plot_index: usize,
 }
 impl Debug for FigureModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -26,20 +25,24 @@ impl FigureModel {
         Self {
             title,
             plots: Vec::new(),
-            plot_index: 0,
         }
     }
+    pub fn clear_plots(&mut self) {
+        self.plots.clear();
+    }
     pub fn add_plot(&mut self) -> &mut Arc<RwLock<PlotModel>> {
-        let index = self.plot_index;
-        self.plot_index += 1;
-        if index < self.plots.len() {
-            &mut self.plots[index]
-        } else {
-            #[allow(clippy::arc_with_non_send_sync)]
-            let model = Arc::new(RwLock::new(PlotModel::new()));
-            self.plots.push(model);
-            self.plots.last_mut().unwrap()
+        #[allow(clippy::arc_with_non_send_sync)]
+        let model = Arc::new(RwLock::new(PlotModel::new()));
+        self.plots.push(model);
+        self.plots.last_mut().unwrap()
+    }
+    /// Update the figure model.
+    pub fn update(&mut self) {
+        for plot in self.plots.iter() {
+            let mut plot = plot.write();
+            plot.update();
         }
+
     }
 }
 
@@ -69,7 +72,6 @@ impl FigureViewer {
 impl Render for FigureViewer {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.add_views(cx);
-        self.model.write().plot_index = 0;
         div()
             .flex()
             .flex_col()

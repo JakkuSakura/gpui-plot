@@ -17,6 +17,15 @@ pub(crate) struct PanState<X: AxisType, Y: AxisType> {
     initial_pan_position: Point<Pixels>,
 }
 
+pub enum ViewUpdateType {
+    /// Freely movable
+    Free,
+    /// Fixed to the current state
+    Fixed,
+    /// Automatically updated
+    Auto,
+}
+
 pub struct AxesModel<X: AxisType, Y: AxisType> {
     pub axes_bounds: AxesBounds<X, Y>,
     pub pixel_bounds: AxesBoundsPixels,
@@ -24,6 +33,7 @@ pub struct AxesModel<X: AxisType, Y: AxisType> {
     pub(crate) pan_state: Option<PanState<X, Y>>,
     pub(crate) event_processed: bool,
     pub(crate) elements: Vec<RwLock<Box<dyn GeometryAxes<X = X, Y = Y>>>>,
+    pub update_type: ViewUpdateType,
 }
 impl<X: AxisType, Y: AxisType> Debug for AxesModel<X, Y> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -42,6 +52,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             pan_state: None,
             event_processed: false,
             elements: Vec::new(),
+            update_type: ViewUpdateType::Free,
         }
     }
     pub fn clear_elements(&mut self) {
@@ -54,6 +65,9 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.elements.push(RwLock::new(Box::new(element)));
     }
     pub fn pan_begin(&mut self, position: Point<Pixels>) {
+        if matches!(self.update_type, ViewUpdateType::Fixed) {
+            return;
+        }
         if self.event_processed {
             return;
         }
@@ -66,7 +80,9 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         if self.event_processed {
             return;
         }
-        let pan_state = self.pan_state.as_mut().unwrap();
+        let Some(pan_state) = &self.pan_state else {
+            return;
+        };
         let delta_pixels = event.position - pan_state.initial_pan_position;
         let delta_elements = Size2 {
             width: self
@@ -131,6 +147,27 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
     pub fn transform_point_reverse(&self, point: Point<Pixels>) -> Point2<X, Y> {
         self.axes_bounds
             .transform_point_reverse(self.pixel_bounds, point)
+    }
+    pub fn update(&mut self) {
+        self.update_type = ViewUpdateType::Auto;
+        // update the axes bounds
+        let mut new_axes_bounds = self.axes_bounds.clone();
+        for element in self.elements.iter() {
+            let element = element.read();
+            let Some(x) = element.get_x_range() else {
+                continue;
+            };
+            let Some(y) = element.get_y_range() else {
+                continue;
+            };
+            if let Some(x_union) = new_axes_bounds.x.union(&x) {
+                new_axes_bounds.x = x_union;
+            }
+            if let Some(y_union) = new_axes_bounds.y.union(&y) {
+                new_axes_bounds.y = y_union;
+            }
+        }
+        self.axes_bounds = new_axes_bounds;
     }
 }
 
@@ -200,6 +237,7 @@ impl<X: AxisType, Y: AxisType> DynAxesModel for SharedModel<AxesModel<X, Y>> {
 }
 
 pub trait Axes: GeometryPixels {
+    fn update(&mut self);
     fn get_model(&self) -> &dyn DynAxesModel;
     fn get_model_mut(&mut self) -> &mut dyn DynAxesModel;
     fn pan_begin(&mut self, position: Point<Pixels>);
@@ -222,6 +260,9 @@ impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
 }
 
 impl<X: AxisType, Y: AxisType> Axes for AxesViewer<X, Y> {
+    fn update(&mut self) {
+        self.model.write().update()
+    }
     fn get_model(&self) -> &dyn DynAxesModel {
         &self.model
     }

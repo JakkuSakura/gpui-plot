@@ -24,5 +24,11 @@ pub trait GeometryPixels {
 pub trait GeometryAxes: Send + Sync {
     type X: AxisType;
     type Y: AxisType;
+    fn get_x_range(&self) -> Option<AxisRange<Self::X>> {
+        None
+    }
+    fn get_y_range(&self) -> Option<AxisRange<Self::Y>> {
+        None
+    }
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>);
 }

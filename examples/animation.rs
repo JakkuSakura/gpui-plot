@@ -53,7 +53,8 @@ impl MainViewer {
                         ))
                         .unwrap();
                 }
-            })
+            });
+            plot.update();
         }
         Self {
             figure: cx.new(|_| FigureViewer::new(model.clone())),
@@ -98,7 +99,7 @@ impl Animation {
         let mut x = self.start;
         while x <= self.end {
             let y = (x + t).sin();
-            let mut point = point2(x, y+ shift);
+            let mut point = point2(x, y + shift);
             if transpose {
                 point = point.flip();
             }
@@ -111,6 +112,10 @@ impl Animation {
 impl GeometryAxes for Animation {
     type X = f64;
     type Y = f64;
+
+    fn get_x_range(&self) -> Option<AxisRange<Self::X>> {
+        AxisRange::new(self.start, self.end)
+    }
 
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
         for shift in 0..20 {
