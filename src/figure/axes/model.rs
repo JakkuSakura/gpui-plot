@@ -92,7 +92,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.axes_bounds = pan_state.initial_axes_bounds + delta_elements;
 
         let cx1 = AxesContext::new_without_context(self);
-        self.grid.update_grid(&cx1);
+        self.grid.try_update_grid(&cx1);
     }
     pub fn pan_end(&mut self) {
         if self.event_processed {
@@ -133,7 +133,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.axes_bounds.y = y_range;
 
         let cx1 = AxesContext::new_without_context(self);
-        self.grid.update_grid(&cx1);
+        self.grid.try_update_grid(&cx1);
     }
     pub fn update_scale(&mut self, shrunk_bounds: Bounds<Pixels>) {
         self.pixel_bounds = AxesBoundsPixels::from_bounds(shrunk_bounds);
@@ -175,12 +175,11 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
                 }
             }
         }
-        if let Some(new_axes_bounds) = new_axes_bounds {
-            self.axes_bounds = new_axes_bounds;
-        } else {
-            // no elements to update
+
+        let Some(new_pixel_bounds) = new_axes_bounds else {
             return;
-        }
+        };
+        self.axes_bounds = new_pixel_bounds;
 
         let cx1 = AxesContext::new_without_context(self);
         self.grid.update_grid(&cx1);

@@ -37,10 +37,13 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
         }
         true
     }
-    pub fn update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
+    pub fn try_update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
         if !self.should_update_grid(axes_bounds) {
             return;
         }
+        self.update_grid(axes_bounds);
+    }
+    pub fn update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
         let density = match self.ty {
             GridType::Density(density) => density,
             GridType::Numbers(x, y) => Size2 {
