@@ -23,6 +23,14 @@ impl<X: AxisType, Y: AxisType> Point2<X, Y> {
         Self { x, y }
     }
 }
+impl<T> Point2<T, T> {
+    pub fn flip(self) -> Self {
+        Self {
+            x: self.y,
+            y: self.x,
+        }
+    }
+}
 impl<T: AxisType> From<Point2<T, T>> for (T, T) {
     fn from(point: Point2<T, T>) -> Self {
         (point.x, point.y)

@@ -34,11 +34,11 @@ impl<X: AxisType, Y: AxisType> Debug for AxesModel<X, Y> {
 }
 
 impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
-    pub fn new(axes_bounds: AxesBounds<X, Y>, grid_density: Size2<X::Delta, Y::Delta>) -> Self {
+    pub fn new(axes_bounds: AxesBounds<X, Y>, grid: GridModel<X, Y>) -> Self {
         Self {
             axes_bounds,
             pixel_bounds: AxesBoundsPixels::from_bounds(Bounds::default()),
-            grid: GridModel::new(grid_density),
+            grid,
             pan_state: None,
             event_processed: false,
             elements: Vec::new(),

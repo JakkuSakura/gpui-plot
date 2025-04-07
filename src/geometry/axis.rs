@@ -225,9 +225,11 @@ pub struct AxisRange<T> {
 }
 
 impl<T: Clone> AxisRange<T> {
+    /// Only for plotters' usage. Our range is always inclusive.
     pub fn to_range(&self) -> Range<T> {
         self.min.clone()..self.max.clone()
     }
+
 }
 impl<T: AxisType> AxisRange<T> {
     pub fn new(min: T, max: T) -> Option<Self> {
@@ -253,6 +255,12 @@ impl<T: AxisType> AxisRange<T> {
         } else {
             value
         }
+    }
+    pub fn in_range(&self, value: T) -> bool {
+        value >= self.min && value <= self.max
+    }
+    pub fn difference(&self) -> T::Delta {
+        self.max - self.min
     }
     pub fn pixels_per_element(&self, bounds: AxisRangePixels) -> f32 {
         bounds.size / self.size_in_f32

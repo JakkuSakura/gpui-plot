@@ -4,7 +4,8 @@ use gpui::{
 };
 use gpui_plot::figure::axes::AxesModel;
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
-use gpui_plot::geometry::{size2, AxesBounds, AxisRange};
+use gpui_plot::figure::grid::GridModel;
+use gpui_plot::geometry::{AxesBounds, AxisRange};
 use parking_lot::RwLock;
 use plotters::prelude::*;
 use std::sync::Arc;
@@ -66,38 +67,6 @@ impl StockChart {
     }
 }
 
-// impl PlottersChart for StockChart {
-//     fn plot(
-//         &mut self,
-//         root: &DrawingArea<GpuiBackend, Shift>,
-//     ) -> Result<(), plotters_gpui::DrawingErrorKind> {
-//         let (to_date, from_date) = (
-//             parse_time(self.data[0].0) + Duration::days(1),
-//             parse_time(self.data[29].0) - Duration::days(1),
-//         );
-//
-//         let mut chart = ChartBuilder::on(root)
-//             .x_label_area_size(40)
-//             .y_label_area_size(40)
-//             .caption("MSFT Stock Price", ("sans-serif", 50.0).into_font())
-//             .build_cartesian_2d(from_date..to_date, 110f32..135f32)
-//             .unwrap();
-//
-//         chart
-//             .configure_mesh()
-//             .light_line_style(WHITE)
-//             .draw()
-//             .unwrap();
-//
-//         chart
-//             .draw_series(self.data.iter().map(|x| {
-//                 CandleStick::new(parse_time(x.0), x.1, x.2, x.3, x.4, GREEN.filled(), RED, 15)
-//             }))
-//             .unwrap();
-//
-//         Ok(())
-//     }
-// }
 
 #[allow(unused)]
 struct MainViewer {
@@ -108,7 +77,7 @@ struct MainViewer {
 impl MainViewer {
     fn new(_window: &mut Window, cx: &mut App) -> Self {
         let figure = FigureModel::new("Example Figure".to_string());
-        let mut model = Arc::new(RwLock::new(figure));
+        let model = Arc::new(RwLock::new(figure));
         let stock_chart = StockChart::new();
         let (to_date, from_date) = (
             parse_time(stock_chart.data[0].0) + chrono::Duration::days(1),
@@ -118,8 +87,8 @@ impl MainViewer {
             AxisRange::new(from_date, to_date).unwrap(),
             AxisRange::new(100.0f32, 140.0f32).unwrap(),
         );
-        let size = size2(chrono::Duration::days(10), 10.0);
-        let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, size)));
+        let grid_type = GridModel::from_numbers(10, 10);
+        let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid_type)));
         {
             let mut model = model.write();
             let mut plot = model.add_plot().write();

@@ -4,7 +4,8 @@ use gpui::{
 };
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
 use gpui_plot::figure::figure::{FigureModel, FigureViewer};
-use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
+use gpui_plot::figure::grid::GridModel;
+use gpui_plot::geometry::{point2, AxesBounds, AxisRange, GeometryAxes, Line};
 use parking_lot::RwLock;
 use plotters::prelude::*;
 use std::sync::Arc;
@@ -26,8 +27,8 @@ impl MainViewer {
             AxisRange::new(0.0, 100.0).unwrap(),
             AxisRange::new(0.0, 100.0).unwrap(),
         );
-        let size = size2(10.0, 10.0);
-        let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, size)));
+        let grid = GridModel::from_numbers(10, 10);
+        let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid)));
         {
             let mut model = model.write();
             let mut plot = model.add_plot().write();
@@ -42,8 +43,8 @@ impl MainViewer {
                     .unwrap();
 
                 chart.configure_mesh().draw().unwrap();
-                for shift in 10..20 {
-                    let line = animation.next_line((shift * 5) as f64);
+                for shift in 0..20 {
+                    let line = animation.next_line((shift * 5) as f64, false);
 
                     chart
                         .draw_series(LineSeries::new(
@@ -91,13 +92,17 @@ impl Animation {
             time_start: std::time::Instant::now(),
         }
     }
-    fn next_line(&mut self, shift: f64) -> Line<f64, f64> {
+    fn next_line(&mut self, shift: f64, transpose: bool) -> Line<f64, f64> {
         let mut line = Line::new();
         let t = self.time_start.elapsed().as_secs_f64() * 10.0;
         let mut x = self.start;
         while x <= self.end {
             let y = (x + t).sin();
-            line.add_point(point2(x, y + shift));
+            let mut point = point2(x, y+ shift);
+            if transpose {
+                point = point.flip();
+            }
+            line.add_point(point);
             x += self.step;
         }
         line
@@ -108,8 +113,8 @@ impl GeometryAxes for Animation {
     type Y = f64;
 
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
-        for shift in 0..10 {
-            let mut line = self.next_line((shift * 5) as f64);
+        for shift in 0..20 {
+            let mut line = self.next_line((shift * 5) as f64, true);
             line.render_axes(cx);
         }
     }
