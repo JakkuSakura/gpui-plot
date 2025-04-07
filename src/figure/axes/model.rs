@@ -152,7 +152,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
     pub fn update(&mut self) {
         self.update_type = ViewUpdateType::Auto;
         // update the axes bounds
-        let mut new_axes_bounds = self.axes_bounds.clone();
+        let mut new_axes_bounds = None;
         for element in self.elements.iter() {
             let element = element.read();
             let Some(x) = element.get_x_range() else {
@@ -161,14 +161,27 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             let Some(y) = element.get_y_range() else {
                 continue;
             };
-            if let Some(x_union) = new_axes_bounds.x.union(&x) {
-                new_axes_bounds.x = x_union;
-            }
-            if let Some(y_union) = new_axes_bounds.y.union(&y) {
-                new_axes_bounds.y = y_union;
+            match new_axes_bounds {
+                None => {
+                    new_axes_bounds = Some(AxesBounds::new(x, y));
+                }
+                Some(ref mut bounds) => {
+                    if let Some(x_union) = bounds.x.union(&x) {
+                        bounds.x = x_union;
+                    }
+                    if let Some(y_union) = bounds.y.union(&y) {
+                        bounds.y = y_union;
+                    }
+                }
             }
         }
-        self.axes_bounds = new_axes_bounds;
+        if let Some(new_axes_bounds) = new_axes_bounds {
+            self.axes_bounds = new_axes_bounds;
+        } else {
+            // no elements to update
+            return;
+        }
+
         let cx1 = AxesContext::new_without_context(self);
         self.grid.update_grid(&cx1);
     }
