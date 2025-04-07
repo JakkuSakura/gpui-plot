@@ -76,4 +76,7 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
     pub fn plot(&mut self, mut element: impl GeometryAxes<X = X, Y = Y> + 'static) {
         element.render_axes(self);
     }
+    pub fn contains(&self, point: Point2<X, Y>) -> bool {
+        self.axes_bounds.x.contains(point.x) && self.axes_bounds.y.contains(point.y)
+    }
 }
