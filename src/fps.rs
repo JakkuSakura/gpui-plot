@@ -33,22 +33,22 @@ impl FpsModel {
         self.fps
     }
 }
-pub struct FpsViewer {
+pub struct FpsView {
     pub model: FpsModel,
 }
-impl Default for FpsViewer {
+impl Default for FpsView {
     fn default() -> Self {
         Self::new()
     }
 }
-impl FpsViewer {
+impl FpsView {
     pub fn new() -> Self {
         Self {
             model: FpsModel::new(),
         }
     }
 }
-impl Render for FpsViewer {
+impl Render for FpsView {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let fps = self.model.next_fps();
         let text = format!("fps: {:.2}", fps);

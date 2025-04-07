@@ -3,7 +3,7 @@ use gpui::{
     WindowOptions,
 };
 use gpui_plot::figure::axes::AxesModel;
-use gpui_plot::figure::figure::{FigureModel, FigureViewer};
+use gpui_plot::figure::figure::{FigureModel, FigureView};
 use gpui_plot::figure::grid::GridModel;
 use gpui_plot::geometry::{AxesBounds, AxisRange};
 use parking_lot::RwLock;
@@ -67,14 +67,13 @@ impl StockChart {
     }
 }
 
-
 #[allow(unused)]
-struct MainViewer {
+struct MainView {
     model: Arc<RwLock<FigureModel>>,
-    figure: Entity<FigureViewer>,
+    figure: Entity<FigureView>,
 }
 
-impl MainViewer {
+impl MainView {
     fn new(_window: &mut Window, cx: &mut App) -> Self {
         let figure = FigureModel::new("Example Figure".to_string());
         let model = Arc::new(RwLock::new(figure));
@@ -130,13 +129,13 @@ impl MainViewer {
             })
         }
         Self {
-            figure: cx.new(|_| FigureViewer::new(model.clone())),
+            figure: cx.new(|_| FigureView::new(model.clone())),
             model,
         }
     }
 }
 
-impl Render for MainViewer {
+impl Render for MainView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let id = cx.entity_id();
         cx.defer(move |app| app.notify(id));
@@ -158,7 +157,7 @@ fn main() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| MainViewer::new(window, cx)),
+            |window, cx| cx.new(|cx| MainView::new(window, cx)),
         )
         .unwrap();
     });

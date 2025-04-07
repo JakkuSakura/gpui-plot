@@ -38,20 +38,20 @@ use gpui::{
     WindowOptions,
 };
 use gpui_plot::figure::axes::{AxesContext, AxesModel};
-use gpui_plot::figure::figure::{FigureModel, FigureViewer};
+use gpui_plot::figure::figure::{FigureModel, FigureView};
 use gpui_plot::geometry::{point2, size2, AxesBounds, AxisRange, GeometryAxes, Line};
 use parking_lot::RwLock;
 use plotters::prelude::*;
 use std::sync::Arc;
 
 #[allow(unused)]
-struct MainViewer {
+struct MainView {
     model: Arc<RwLock<FigureModel>>,
     // animation: Animation,
-    figure: Entity<FigureViewer>,
+    figure: Entity<FigureView>,
 }
 
-impl MainViewer {
+impl MainView {
     fn new(_window: &mut Window, cx: &mut App) -> Self {
         let model = FigureModel::new("Example Figure".to_string());
         let model = Arc::new(RwLock::new(model));
@@ -90,14 +90,14 @@ impl MainViewer {
             })
         }
         Self {
-            figure: cx.new(|_| FigureViewer::new(model.clone())),
+            figure: cx.new(|_| FigureView::new(model.clone())),
             model,
             // animation,
         }
     }
 }
 
-impl Render for MainViewer {
+impl Render for MainView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let id = cx.entity_id();
         cx.defer(move |app| app.notify(id));
@@ -158,7 +158,7 @@ fn main() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| MainViewer::new(window, cx)),
+            |window, cx| cx.new(|cx| MainView::new(window, cx)),
         )
             .unwrap();
     });

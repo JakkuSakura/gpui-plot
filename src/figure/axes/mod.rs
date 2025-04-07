@@ -1,11 +1,11 @@
 mod model;
 #[cfg(feature = "plotters")]
 mod plotters;
-mod viewer;
+mod view;
 pub use model::*;
 #[cfg(feature = "plotters")]
 pub use plotters::*;
-pub use viewer::*;
+pub use view::*;
 
 use crate::figure::SharedModel;
 use crate::geometry::{

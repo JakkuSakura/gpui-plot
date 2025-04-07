@@ -76,15 +76,15 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
     }
 }
 #[derive(Clone, Debug)]
-pub struct GridViewer<X: AxisType, Y: AxisType> {
+pub struct GridView<X: AxisType, Y: AxisType> {
     model: Arc<RwLock<AxesModel<X, Y>>>,
 }
-impl<X: AxisType, Y: AxisType> GridViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> GridView<X, Y> {
     pub fn new(context: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
         Self { model: context }
     }
 }
-impl<X: AxisType, Y: AxisType> GeometryAxes for GridViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> GeometryAxes for GridView<X, Y> {
     type X = X;
     type Y = Y;
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {

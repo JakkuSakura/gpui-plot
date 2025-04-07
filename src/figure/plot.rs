@@ -1,4 +1,4 @@
-use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesViewer, PlottersAxes, PlottersFunc};
+use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesView, PlottersAxes, PlottersFunc};
 use crate::figure::SharedModel;
 use crate::fps::FpsModel;
 use crate::geometry::AxisType;
@@ -51,7 +51,7 @@ impl PlotModel {
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
     ) -> &SharedModel<AxesModel<X, Y>> {
-        let axes = AxesViewer::new(model);
+        let axes = AxesView::new(model);
         self.axes.push(Box::new(axes));
         let any = self.axes.last_mut().unwrap().get_model();
 
@@ -79,10 +79,10 @@ impl PlotModel {
     }
 }
 
-pub struct PlotViewer {
+pub struct PlotView {
     pub model: Arc<RwLock<PlotModel>>,
 }
-impl PlotViewer {
+impl PlotView {
     pub fn new(model: Arc<RwLock<PlotModel>>) -> Self {
         Self { model }
     }
@@ -116,7 +116,7 @@ impl PlotViewer {
         cx.notify();
     }
 }
-impl Render for PlotViewer {
+impl Render for PlotView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
         for axes in self.model.write().axes.iter_mut() {
             axes.get_model_mut().new_render();

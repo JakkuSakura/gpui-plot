@@ -5,10 +5,10 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct TicksViewer<X: AxisType, Y: AxisType> {
+pub struct TicksView<X: AxisType, Y: AxisType> {
     context: Arc<RwLock<AxesModel<X, Y>>>,
 }
-impl<X: AxisType, Y: AxisType> TicksViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> TicksView<X, Y> {
     pub fn new(context: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
         Self { context }
     }
@@ -42,7 +42,7 @@ impl<X: AxisType, Y: AxisType> TicksViewer<X, Y> {
         }
     }
 }
-impl<X: AxisType, Y: AxisType> GeometryPixels for TicksViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> GeometryPixels for TicksView<X, Y> {
     fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         self.render(window, cx);
     }

@@ -1,16 +1,16 @@
 use crate::figure::axes::model::{AxesModel, DynAxesModel};
 use crate::figure::axes::{Axes, AxesContext};
-use crate::figure::grid::GridViewer;
-use crate::figure::ticks::TicksViewer;
+use crate::figure::grid::GridView;
+use crate::figure::ticks::TicksView;
 use crate::geometry::{AxisType, GeometryAxes, GeometryPixels, Line};
 use gpui::{px, App, Bounds, Edges, MouseMoveEvent, Pixels, Point, Window};
 use parking_lot::RwLock;
 use std::sync::Arc;
 
-pub struct AxesViewer<X: AxisType, Y: AxisType> {
+pub struct AxesView<X: AxisType, Y: AxisType> {
     pub model: Arc<RwLock<AxesModel<X, Y>>>,
 }
-impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> AxesView<X, Y> {
     pub fn new(model: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
         Self { model }
     }
@@ -35,12 +35,12 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
             self.model.write().grid.update_grid(cx1);
         }
 
-        let mut ticks = TicksViewer::new(self.model.clone());
+        let mut ticks = TicksView::new(self.model.clone());
         {
             let (window, cx1) = cx1.cx.as_mut().unwrap();
             ticks.render(window, cx1);
         }
-        let mut grid = GridViewer::new(self.model.clone());
+        let mut grid = GridView::new(self.model.clone());
         {
             grid.render_axes(cx1);
         }
@@ -56,7 +56,7 @@ impl<X: AxisType, Y: AxisType> AxesViewer<X, Y> {
 
 const CONTENT_BOARDER: Pixels = px(30.0);
 
-impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> GeometryPixels for AxesView<X, Y> {
     fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         let shrunk_bounds = bounds.extend(Edges {
             top: px(-0.0),
@@ -69,7 +69,7 @@ impl<X: AxisType, Y: AxisType> GeometryPixels for AxesViewer<X, Y> {
     }
 }
 
-impl<X: AxisType, Y: AxisType> Axes for AxesViewer<X, Y> {
+impl<X: AxisType, Y: AxisType> Axes for AxesView<X, Y> {
     fn update(&mut self) {
         self.model.write().update()
     }

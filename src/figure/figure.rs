@@ -1,4 +1,4 @@
-use crate::figure::plot::{PlotModel, PlotViewer};
+use crate::figure::plot::{PlotModel, PlotView};
 use crate::figure::text::centered_text;
 use gpui::{
     div, App, AppContext, Context, Entity, IntoElement, ParentElement, Render, Styled, Window,
@@ -42,18 +42,17 @@ impl FigureModel {
             let mut plot = plot.write();
             plot.update();
         }
-
     }
 }
 
 /// A Figure is per definition of matplotlib: https://matplotlib.org/stable/users/explain/quick_start.html
 /// It contains a title, a canvas, 2 axes, and a legend.
 /// The canvas is the main area where the plot is drawn.
-pub struct FigureViewer {
+pub struct FigureView {
     pub model: Arc<RwLock<FigureModel>>,
-    pub plots: Vec<Entity<PlotViewer>>,
+    pub plots: Vec<Entity<PlotView>>,
 }
-impl FigureViewer {
+impl FigureView {
     pub fn new(model: Arc<RwLock<FigureModel>>) -> Self {
         Self {
             model,
@@ -63,13 +62,13 @@ impl FigureViewer {
     fn add_views(&mut self, cx: &mut App) {
         for i in self.plots.len()..self.model.read().plots.len() {
             let plot_model = self.model.read().plots[i].clone();
-            let view = PlotViewer::new(plot_model.clone());
+            let view = PlotView::new(plot_model.clone());
             let plot = cx.new(move |_| view);
             self.plots.push(plot);
         }
     }
 }
-impl Render for FigureViewer {
+impl Render for FigureView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.add_views(cx);
         div()
