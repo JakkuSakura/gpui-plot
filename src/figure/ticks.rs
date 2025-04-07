@@ -1,19 +1,17 @@
 use crate::figure::axes::AxesModel;
 use crate::geometry::{point2, AxisType, GeometryPixels, Text};
 use gpui::{px, App, Bounds, Pixels, Window};
-use parking_lot::RwLock;
-use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct TicksView<X: AxisType, Y: AxisType> {
-    context: Arc<RwLock<AxesModel<X, Y>>>,
+pub struct TicksView<'a, X: AxisType, Y: AxisType> {
+    context: &'a AxesModel<X, Y>,
 }
-impl<X: AxisType, Y: AxisType> TicksView<X, Y> {
-    pub fn new(context: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
+impl<'a, X: AxisType, Y: AxisType> TicksView<'a, X, Y> {
+    pub fn new(context: &'a AxesModel<X, Y>) -> Self {
         Self { context }
     }
     pub fn render(&mut self, window: &mut Window, cx: &mut App) {
-        let context = self.context.read();
+        let context = self.context;
         let size = px(12.0);
 
         for x in context.grid.grid_x_lines.iter().cloned() {
@@ -42,7 +40,7 @@ impl<X: AxisType, Y: AxisType> TicksView<X, Y> {
         }
     }
 }
-impl<X: AxisType, Y: AxisType> GeometryPixels for TicksView<X, Y> {
+impl<'a, X: AxisType, Y: AxisType> GeometryPixels for TicksView<'a, X, Y> {
     fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         self.render(window, cx);
     }

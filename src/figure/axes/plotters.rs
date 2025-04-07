@@ -1,4 +1,4 @@
-use crate::figure::axes::{Axes, AxesContext, AxesModel, DynAxesModel};
+use crate::figure::axes::{Axes, AxesContext, AxesModel};
 use crate::geometry::{AxisType, GeometryPixels};
 use gpui::{px, App, Bounds, Edges, MouseMoveEvent, Pixels, Point, Window};
 use parking_lot::RwLock;
@@ -10,79 +10,32 @@ use tracing::error;
 
 const CONTENT_BOARDER: Pixels = px(30.0);
 
-pub trait GeometryAxesPlotters {
-    type X: AxisType;
-    type Y: AxisType;
-    fn render_axes(
-        &mut self,
-        area: &mut DrawingArea<GpuiBackend, Shift>,
-        cx: &mut AxesContext<Self::X, Self::Y>,
-    );
-}
-pub(crate) struct PlottersFunc<X, Y, F> {
-    func: F,
-    phantom: std::marker::PhantomData<(X, Y, F)>,
-}
-impl<X, Y, F> PlottersFunc<X, Y, F> {
-    pub fn new(func: F) -> Self {
-        Self {
-            func,
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-impl<
-        X: AxisType,
-        Y: AxisType,
-        F: FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>) + 'static,
-    > GeometryAxesPlotters for PlottersFunc<X, Y, F>
-{
-    type X = X;
-    type Y = Y;
-
-    fn render_axes(
-        &mut self,
-        area: &mut DrawingArea<GpuiBackend, Shift>,
-        cx: &mut AxesContext<Self::X, Self::Y>,
-    ) {
-        (self.func)(area, cx);
-    }
-}
-pub struct PlottersAxes<X: AxisType, Y: AxisType> {
+pub struct PlottersModel<X: AxisType, Y: AxisType> {
+    pub backend_color: RGBColor,
+    pub chart: Box<dyn FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>)>,
     model: Arc<RwLock<AxesModel<X, Y>>>,
-    draw: Box<dyn GeometryAxesPlotters<X = X, Y = Y>>,
 }
-impl<X: AxisType, Y: AxisType> PlottersAxes<X, Y> {
+impl<X: AxisType, Y: AxisType> PlottersModel<X, Y> {
     pub fn new(
         model: Arc<RwLock<AxesModel<X, Y>>>,
-        draw: Box<dyn GeometryAxesPlotters<X = X, Y = Y>>,
+        chart: Box<dyn FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>)>,
     ) -> Self {
         Self {
-            model: model.clone(),
-            draw,
+            backend_color: RGBColor(0, 0, 0),
+            chart,
+            model,
         }
     }
-    pub fn plot<'a>(
-        &mut self,
-        bounds: Bounds<Pixels>,
-        window: &'a mut Window,
-        cx: &'a mut App,
-    ) -> Result<(), DrawingAreaErrorKind<plotters_gpui::Error>> {
-        let mut root = GpuiBackend::new(bounds, window, cx).into_drawing_area();
-        let cx1 = &mut AxesContext::new_without_context(self.model.clone());
-        self.draw.render_axes(&mut root, cx1);
-        root.present()?;
-        Ok(())
-    }
 }
-impl<X: AxisType, Y: AxisType> Axes for PlottersAxes<X, Y> {
-    fn update(&mut self) {}
-    fn get_model(&self) -> &dyn DynAxesModel {
-        &self.model
+impl<X: AxisType, Y: AxisType> Axes for PlottersModel<X, Y> {
+    fn update(&mut self) {
+        self.model.write().update();
     }
-    fn get_model_mut(&mut self) -> &mut dyn DynAxesModel {
-        &mut self.model
+
+    fn new_render(&mut self) {
+        self.model.write().new_render();
     }
+
     fn pan_begin(&mut self, position: Point<Pixels>) {
         self.model.write().pan_begin(position);
     }
@@ -98,8 +51,33 @@ impl<X: AxisType, Y: AxisType> Axes for PlottersAxes<X, Y> {
     fn zoom(&mut self, point: Point<Pixels>, delta: f32) {
         self.model.write().zoom(point, delta);
     }
+    fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        PlottersView::new(self).render_pixels(bounds, window, cx);
+    }
 }
-impl<X: AxisType, Y: AxisType> GeometryPixels for PlottersAxes<X, Y> {
+pub struct PlottersView<'a, X: AxisType, Y: AxisType> {
+    pub model: &'a mut PlottersModel<X, Y>,
+}
+impl<'a, X: AxisType, Y: AxisType> PlottersView<'a, X, Y> {
+    pub fn new(model: &'a mut PlottersModel<X, Y>) -> Self {
+        Self { model }
+    }
+
+    pub fn plot(
+        &mut self,
+        bounds: Bounds<Pixels>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Result<(), DrawingAreaErrorKind<plotters_gpui::Error>> {
+        let mut root = GpuiBackend::new(bounds, window, cx).into_drawing_area();
+        let base_model = self.model.model.read();
+        let cx1 = &mut AxesContext::new_without_context(&base_model);
+        (self.model.chart)(&mut root, cx1);
+        root.present()?;
+        Ok(())
+    }
+}
+impl<'a, X: AxisType, Y: AxisType> GeometryPixels for PlottersView<'a, X, Y> {
     fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         let bounds = bounds.extend(Edges {
             top: px(0.0),
@@ -113,7 +91,7 @@ impl<X: AxisType, Y: AxisType> GeometryPixels for PlottersAxes<X, Y> {
             bottom: -CONTENT_BOARDER,
             left: -CONTENT_BOARDER,
         });
-        self.model.write().update_scale(shrunk_bounds);
+        self.model.model.write().update_scale(shrunk_bounds);
         if let Err(err) = self.plot(bounds, window, cx) {
             error!("failed to plot: {}", err);
         }

@@ -1,11 +1,11 @@
-use crate::figure::axes::{Axes, AxesContext, AxesModel, AxesView, PlottersAxes, PlottersFunc};
+use crate::figure::axes::{Axes, AxesContext, AxesModel, PlottersModel};
 use crate::figure::SharedModel;
 use crate::fps::FpsModel;
 use crate::geometry::AxisType;
 use gpui::{
-    canvas, div, App, Bounds, Context, InteractiveElement, IntoElement, MouseButton,
-    MouseDownEvent, MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta,
-    ScrollWheelEvent, Styled, Window,
+    canvas, div, Bounds, Context, InteractiveElement, IntoElement, MouseButton, MouseDownEvent,
+    MouseMoveEvent, ParentElement, Pixels, Point, Render, ScrollDelta, ScrollWheelEvent, Styled,
+    Window,
 };
 use parking_lot::RwLock;
 use plotters::coord::Shift;
@@ -51,16 +51,15 @@ impl PlotModel {
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
     ) -> &SharedModel<AxesModel<X, Y>> {
-        let axes = AxesView::new(model);
-        self.axes.push(Box::new(axes));
-        let any = self.axes.last_mut().unwrap().get_model();
+        self.axes.push(Box::new(model));
+        let any = self.axes.last_mut().unwrap();
 
-        let model = any
-            .as_any()
-            .downcast_ref::<SharedModel<AxesModel<X, Y>>>()
-            .unwrap();
-
-        model
+        unsafe {
+            let axes_ptr = any.as_mut() as *const dyn Axes;
+            let erased_ptr = axes_ptr as *const SharedModel<AxesModel<X, Y>>;
+            let shared_model = &*(erased_ptr as *const SharedModel<AxesModel<X, Y>>);
+            shared_model
+        }
     }
     #[cfg(feature = "plotters")]
     pub fn add_axes_plotters<X: AxisType, Y: AxisType>(
@@ -68,7 +67,7 @@ impl PlotModel {
         model: SharedModel<AxesModel<X, Y>>,
         draw: impl FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>) + 'static,
     ) {
-        let axes = PlottersAxes::new(model, Box::new(PlottersFunc::new(draw)));
+        let axes = PlottersModel::new(model, Box::new(draw));
 
         self.axes.push(Box::new(axes));
     }
@@ -79,6 +78,7 @@ impl PlotModel {
     }
 }
 
+#[derive(Clone)]
 pub struct PlotView {
     pub model: Arc<RwLock<PlotModel>>,
 }
@@ -119,18 +119,19 @@ impl PlotView {
 impl Render for PlotView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
         for axes in self.model.write().axes.iter_mut() {
-            axes.get_model_mut().new_render();
+            axes.new_render();
         }
 
         div()
             .size_full()
             .child(
                 canvas(|_, _window, _cx| (), {
-                    let model = self.model.clone();
+                    let this = self.clone();
                     move |bounds, _ele: (), window, cx| {
-                        model.write().bounds = bounds;
-                        let mut plot_cx = PlotContext { model, window, cx };
-                        plot_cx.render_axes(bounds);
+                        this.model.write().bounds = bounds;
+                        for axes in this.model.write().axes.iter_mut() {
+                            axes.render(bounds, window, cx);
+                        }
                     }
                 })
                 .size_full(),
@@ -184,19 +185,5 @@ impl Render for PlotView {
                 // );
                 this.zoom(ev.position, delta, window, cx);
             }))
-    }
-}
-
-pub struct PlotContext<'a> {
-    pub(crate) model: Arc<RwLock<PlotModel>>,
-    pub(crate) window: &'a mut Window,
-    pub(crate) cx: &'a mut App,
-}
-impl<'a> PlotContext<'a> {
-    pub fn render_axes(&mut self, bounds: Bounds<Pixels>) {
-        let mut model = self.model.write();
-        for axes in model.axes.iter_mut() {
-            axes.render_pixels(bounds, self.window, self.cx);
-        }
     }
 }

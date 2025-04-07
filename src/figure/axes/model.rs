@@ -1,29 +1,11 @@
+use crate::figure::axes::{Axes, AxesContext, AxesView};
 use crate::figure::grid::GridModel;
-use crate::figure::SharedModel;
 use crate::geometry::{
-    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, Point2, Size2,
+    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryPixels, Point2, Size2,
 };
-use gpui::{Bounds, MouseMoveEvent, Pixels, Point};
+use gpui::{App, Bounds, MouseMoveEvent, Pixels, Point, Window};
 use parking_lot::RwLock;
-use std::any::Any;
 use std::fmt::Debug;
-
-pub trait DynAxesModel {
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-    fn new_render(&mut self);
-}
-impl<X: AxisType, Y: AxisType> DynAxesModel for SharedModel<AxesModel<X, Y>> {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-    fn new_render(&mut self) {
-        self.write().event_processed = false;
-    }
-}
 
 pub(crate) struct PanState<X: AxisType, Y: AxisType> {
     initial_axes_bounds: AxesBounds<X, Y>,
@@ -108,6 +90,9 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
                 .elements_per_pixels(delta_pixels.y, self.pixel_bounds.y),
         };
         self.axes_bounds = pan_state.initial_axes_bounds + delta_elements;
+
+        let cx1 = AxesContext::new_without_context(self);
+        self.grid.update_grid(&cx1);
     }
     pub fn pan_end(&mut self) {
         if self.event_processed {
@@ -146,6 +131,9 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         };
         self.axes_bounds.x = x_range;
         self.axes_bounds.y = y_range;
+
+        let cx1 = AxesContext::new_without_context(self);
+        self.grid.update_grid(&cx1);
     }
     pub fn update_scale(&mut self, shrunk_bounds: Bounds<Pixels>) {
         self.pixel_bounds = AxesBoundsPixels::from_bounds(shrunk_bounds);
@@ -181,5 +169,34 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             }
         }
         self.axes_bounds = new_axes_bounds;
+        let cx1 = AxesContext::new_without_context(self);
+        self.grid.update_grid(&cx1);
+    }
+}
+
+impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
+    fn update(&mut self) {
+        self.update()
+    }
+
+    fn new_render(&mut self) {
+        self.event_processed = false;
+    }
+    fn pan_begin(&mut self, position: Point<Pixels>) {
+        self.pan_begin(position);
+    }
+
+    fn pan(&mut self, event: &MouseMoveEvent) {
+        self.pan(event);
+    }
+
+    fn pan_end(&mut self) {
+        self.pan_end();
+    }
+    fn zoom(&mut self, point: Point<Pixels>, delta: f32) {
+        self.zoom(point, delta);
+    }
+    fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        AxesView::new(self).render_pixels(bounds, window, cx);
     }
 }

@@ -1,7 +1,5 @@
-use crate::figure::axes::{AxesContext, AxesModel};
+use crate::figure::axes::AxesContext;
 use crate::geometry::{point2, size2, AxisType, GeometryAxes, Line, Size2};
-use parking_lot::RwLock;
-use std::sync::Arc;
 
 pub enum GridType<X: AxisType, Y: AxisType> {
     Density(Size2<X::Delta, Y::Delta>),
@@ -33,13 +31,16 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
         self.movable = false;
         self
     }
-    pub fn should_update_grid(&self, _axes_bounds: &mut AxesContext<X, Y>) -> bool {
+    fn should_update_grid(&self, _axes_bounds: &AxesContext<X, Y>) -> bool {
         if self.movable {
             return self.grid_x_lines.is_empty() || self.grid_y_lines.is_empty();
         }
         true
     }
-    pub fn update_grid(&mut self, axes_bounds: &mut AxesContext<X, Y>) {
+    pub fn update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
+        if !self.should_update_grid(axes_bounds) {
+            return;
+        }
         let density = match self.ty {
             GridType::Density(density) => density,
             GridType::Numbers(x, y) => Size2 {
@@ -55,7 +56,7 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
     }
     fn update_grid_by_density(
         &mut self,
-        axes_bounds: &mut AxesContext<X, Y>,
+        axes_bounds: &AxesContext<X, Y>,
         density: Size2<X::Delta, Y::Delta>,
     ) {
         // TODO: clap beforehand to have better performance
@@ -75,28 +76,28 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
             .retain(|y| axes_bounds.axes_bounds.y.contains(*y));
     }
 }
-#[derive(Clone, Debug)]
-pub struct GridView<X: AxisType, Y: AxisType> {
-    model: Arc<RwLock<AxesModel<X, Y>>>,
+
+pub struct GridView<'a, X: AxisType, Y: AxisType> {
+    model: &'a GridModel<X, Y>,
 }
-impl<X: AxisType, Y: AxisType> GridView<X, Y> {
-    pub fn new(context: Arc<RwLock<AxesModel<X, Y>>>) -> Self {
-        Self { model: context }
+impl<'a, X: AxisType, Y: AxisType> GridView<'a, X, Y> {
+    pub fn new(model: &'a GridModel<X, Y>) -> Self {
+        Self { model }
     }
 }
-impl<X: AxisType, Y: AxisType> GeometryAxes for GridView<X, Y> {
+impl<'a, X: AxisType, Y: AxisType> GeometryAxes for GridView<'a, X, Y> {
     type X = X;
     type Y = Y;
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
-        let model = self.model.read();
-        for x in model.grid.grid_x_lines.iter().cloned() {
+        let grid = self.model;
+        for x in grid.grid_x_lines.iter().cloned() {
             let top_point = point2(x, cx.axes_bounds.y.min);
             let bottom_point = point2(x, cx.axes_bounds.y.max);
             let mut line = Line::between_points(top_point, bottom_point);
             line.render_axes(cx);
         }
 
-        for y in model.grid.grid_y_lines.iter().cloned() {
+        for y in grid.grid_y_lines.iter().cloned() {
             let left_point = point2(cx.axes_bounds.x.min, y);
             let right_point = point2(cx.axes_bounds.x.max, y);
             let mut line = Line::between_points(left_point, right_point);
