@@ -1,10 +1,10 @@
 use crate::figure::axes::{Axes, AxesContext, AxesView};
 use crate::figure::grid::GridModel;
 use crate::geometry::{
-    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryPixels, Point2, Size2,
+    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryAxesFn,
+    GeometryPixels, Point2, Size2,
 };
 use gpui::{App, Bounds, MouseMoveEvent, Pixels, Point, Window};
-use parking_lot::RwLock;
 use std::fmt::Debug;
 
 pub(crate) struct PanState<X: AxisType, Y: AxisType> {
@@ -27,7 +27,7 @@ pub struct AxesModel<X: AxisType, Y: AxisType> {
     pub grid: GridModel<X, Y>,
     pub(crate) pan_state: Option<PanState<X, Y>>,
     pub(crate) event_processed: bool,
-    pub(crate) elements: Vec<RwLock<Box<dyn GeometryAxes<X = X, Y = Y>>>>,
+    pub(crate) elements: Vec<Box<dyn GeometryAxes<X = X, Y = Y>>>,
     pub update_type: ViewUpdateType,
 }
 impl<X: AxisType, Y: AxisType> Debug for AxesModel<X, Y> {
@@ -54,10 +54,13 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.elements.clear();
     }
     pub fn add_element(&mut self, element: Box<dyn GeometryAxes<X = X, Y = Y>>) {
-        self.elements.push(RwLock::new(element));
+        self.elements.push(element);
     }
     pub fn plot(&mut self, element: impl GeometryAxes<X = X, Y = Y> + 'static) {
-        self.elements.push(RwLock::new(Box::new(element)));
+        self.elements.push(Box::new(element));
+    }
+    pub fn plot_fn(&mut self, element: impl FnMut(&mut AxesContext<X, Y>) + Send + Sync + 'static) {
+        self.elements.push(Box::new(GeometryAxesFn::new(element)));
     }
     pub fn pan_begin(&mut self, position: Point<Pixels>) {
         if matches!(self.update_type, ViewUpdateType::Fixed) {
@@ -153,8 +156,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.update_type = ViewUpdateType::Auto;
         // update the axes bounds
         let mut new_axes_bounds = None;
-        for element in self.elements.iter() {
-            let element = element.read();
+        for element in self.elements.iter_mut() {
             let Some(x) = element.get_x_range() else {
                 continue;
             };

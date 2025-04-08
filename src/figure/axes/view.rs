@@ -38,8 +38,8 @@ impl<'a, X: AxisType, Y: AxisType> AxesView<'a, X, Y> {
             grid.render_axes(cx1);
         }
 
-        for element in self.model.elements.iter() {
-            element.write().render_axes(cx1);
+        for element in self.model.elements.iter_mut() {
+            element.render_axes(cx1);
         }
     }
 }
