@@ -9,6 +9,7 @@ mod size;
 mod text;
 
 use crate::figure::axes::AxesContext;
+use crate::figure::SharedModel;
 pub use axis::*;
 pub use line::*;
 pub use point::*;
@@ -31,4 +32,17 @@ pub trait GeometryAxes: Send + Sync {
         None
     }
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>);
+}
+impl<T: GeometryAxes> GeometryAxes for SharedModel<T> {
+    type X = T::X;
+    type Y = T::Y;
+    fn get_x_range(&self) -> Option<AxisRange<Self::X>> {
+        self.read().get_x_range()
+    }
+    fn get_y_range(&self) -> Option<AxisRange<Self::Y>> {
+        self.read().get_y_range()
+    }
+    fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
+        self.write().render_axes(cx);
+    }
 }
