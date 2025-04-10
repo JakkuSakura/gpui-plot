@@ -45,7 +45,7 @@ impl<X: AxisType, Y: AxisType> Axes for PlottersModel<X, Y> {
         self.model.write().pan_end();
     }
 
-    fn zoom(&mut self, point: Point<Pixels>, delta: f32) {
+    fn zoom(&mut self, point: Point<Pixels>, delta: f64) {
         self.model.write().zoom(point, delta);
     }
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {

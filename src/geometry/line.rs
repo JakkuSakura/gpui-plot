@@ -101,7 +101,7 @@ impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
                 max = point.x;
             }
         }
-        AxisRange::new(min, max)
+        Some(AxisRange::new(min, max))
     }
     fn get_y_range(&self) -> Option<AxisRange<Self::Y>> {
         if self.points.is_empty() {
@@ -117,7 +117,7 @@ impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
                 max = point.y;
             }
         }
-        AxisRange::new(min, max)
+        Some(AxisRange::new(min, max))
     }
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
         let mut line = Line::new();

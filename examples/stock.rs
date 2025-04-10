@@ -83,8 +83,8 @@ impl MainView {
             parse_time(stock_chart.data[29].0) - chrono::Duration::days(1),
         );
         let axes_bounds = AxesBounds::new(
-            AxisRange::new(from_date, to_date).unwrap(),
-            AxisRange::new(100.0f32, 140.0f32).unwrap(),
+            AxisRange::new(from_date, to_date),
+            AxisRange::new(100.0f32, 140.0f32),
         );
         let grid_type = GridModel::from_numbers(10, 10);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid_type)));
@@ -111,7 +111,7 @@ impl MainView {
                 chart
                     .draw_series(
                         stock_chart
-                            .filter(cx.axes_bounds.x.min, cx.axes_bounds.x.max)
+                            .filter(cx.axes_bounds.x.min(), cx.axes_bounds.x.max())
                             .map(|x| {
                                 CandleStick::new(
                                     parse_time(x.0),

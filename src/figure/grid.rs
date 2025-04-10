@@ -1,5 +1,6 @@
 use crate::figure::axes::AxesContext;
 use crate::geometry::{point2, size2, AxisType, GeometryAxes, Line, Size2};
+use gpui::{size, Size};
 
 pub enum GridType<X: AxisType, Y: AxisType> {
     Density(Size2<X::Delta, Y::Delta>),
@@ -32,10 +33,10 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
         self
     }
     fn should_update_grid(&self, _axes_bounds: &AxesContext<X, Y>) -> bool {
-        if self.movable {
-            return self.grid_x_lines.is_empty() || self.grid_y_lines.is_empty();
+        if self.grid_x_lines.is_empty() || self.grid_y_lines.is_empty() {
+            return true;
         }
-        true
+        !self.movable
     }
     pub fn try_update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
         if !self.should_update_grid(axes_bounds) {
@@ -45,35 +46,27 @@ impl<X: AxisType, Y: AxisType> GridModel<X, Y> {
     }
     pub fn update_grid(&mut self, axes_bounds: &AxesContext<X, Y>) {
         let density = match self.ty {
-            GridType::Density(density) => density,
-            GridType::Numbers(x, y) => Size2 {
-                width: X::delta_from_f32(
-                    X::delta_to_f32(axes_bounds.axes_bounds.x.difference()) / x as f32,
-                ),
-                height: Y::delta_from_f32(
-                    Y::delta_to_f32(axes_bounds.axes_bounds.y.difference()) / y as f32,
-                ),
-            },
+            GridType::Density(density) => density.to_f64(),
+            GridType::Numbers(x, y) => size(
+                axes_bounds.axes_bounds.x.size_in_f64() / x as f64,
+                axes_bounds.axes_bounds.y.size_in_f64() / y as f64,
+            ),
         };
         self.update_grid_by_density(axes_bounds, density);
     }
-    fn update_grid_by_density(
-        &mut self,
-        axes_bounds: &AxesContext<X, Y>,
-        density: Size2<X::Delta, Y::Delta>,
-    ) {
+    fn update_grid_by_density(&mut self, axes_bounds: &AxesContext<X, Y>, density: Size<f64>) {
         // TODO: clap beforehand to have better performance
         self.grid_x_lines = axes_bounds
             .axes_bounds
             .x
-            .iter_step_by(density.width)
+            .iter_step_by_f64(density.width)
             .collect();
         self.grid_x_lines
             .retain(|x| axes_bounds.axes_bounds.x.contains(*x));
         self.grid_y_lines = axes_bounds
             .axes_bounds
             .y
-            .iter_step_by(density.height)
+            .iter_step_by_f64(density.height)
             .collect();
         self.grid_y_lines
             .retain(|y| axes_bounds.axes_bounds.y.contains(*y));
@@ -94,15 +87,15 @@ impl<'a, X: AxisType, Y: AxisType> GeometryAxes for GridView<'a, X, Y> {
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
         let grid = self.model;
         for x in grid.grid_x_lines.iter().cloned() {
-            let top_point = point2(x, cx.axes_bounds.y.min);
-            let bottom_point = point2(x, cx.axes_bounds.y.max);
+            let top_point = point2(x, cx.axes_bounds.y.min());
+            let bottom_point = point2(x, cx.axes_bounds.y.max());
             let mut line = Line::between_points(top_point, bottom_point);
             line.render_axes(cx);
         }
 
         for y in grid.grid_y_lines.iter().cloned() {
-            let left_point = point2(cx.axes_bounds.x.min, y);
-            let right_point = point2(cx.axes_bounds.x.max, y);
+            let left_point = point2(cx.axes_bounds.x.min(), y);
+            let right_point = point2(cx.axes_bounds.x.max(), y);
             let mut line = Line::between_points(left_point, right_point);
             line.render_axes(cx);
         }

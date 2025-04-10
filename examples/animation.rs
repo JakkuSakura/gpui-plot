@@ -24,10 +24,7 @@ impl MainView {
         let model = Arc::new(RwLock::new(model));
         let mut animation = Animation::new(0.0, 100.0, 0.1);
 
-        let axes_bounds = AxesBounds::new(
-            AxisRange::new(0.0, 100.0).unwrap(),
-            AxisRange::new(0.0, 100.0).unwrap(),
-        );
+        let axes_bounds = AxesBounds::new(AxisRange::new(0.0, 100.0), AxisRange::new(0.0, 100.0));
         let grid = GridModel::from_numbers(10, 10);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid)));
         {
@@ -113,10 +110,6 @@ impl Animation {
 impl GeometryAxes for Animation {
     type X = f64;
     type Y = f64;
-
-    fn get_x_range(&self) -> Option<AxisRange<Self::X>> {
-        AxisRange::new(self.start, self.end)
-    }
 
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
         for shift in 0..20 {

@@ -105,7 +105,7 @@ impl PlotView {
     pub fn zoom(
         &mut self,
         zoom_point: Point<Pixels>,
-        delta: f32,
+        delta: f64,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -182,7 +182,7 @@ impl Render for PlotView {
                 //     "Zooming at position: {:?} with delta: {}",
                 //     ev.position, delta
                 // );
-                this.zoom(ev.position, delta, window, cx);
+                this.zoom(ev.position, delta as f64, window, cx);
             }))
     }
 }

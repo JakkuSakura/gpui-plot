@@ -1,5 +1,5 @@
 use crate::geometry::{AxisType, Size2};
-use gpui::{Point, Size};
+use gpui::Point;
 use std::ops::{Add, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -9,17 +9,6 @@ pub struct Point2<X, Y> {
 }
 impl<X: AxisType, Y: AxisType> Point2<X, Y> {
     pub fn new(x: X, y: Y) -> Self {
-        Self { x, y }
-    }
-    pub fn sub_to_f32(self, other: Self) -> Size<f32> {
-        Size {
-            width: X::delta_to_f32(self.x - other.x),
-            height: Y::delta_to_f32(self.y - other.y),
-        }
-    }
-    pub fn add_from_f32(self, other: Size<f32>) -> Self {
-        let x = self.x + X::delta_from_f32(other.width);
-        let y = self.y + Y::delta_from_f32(other.height);
         Self { x, y }
     }
 }
