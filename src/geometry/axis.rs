@@ -88,7 +88,7 @@ where
         chrono::Duration::nanoseconds(value as i64)
     }
     fn min_delta() -> Self::Delta {
-        chrono::Duration::days(2)
+        chrono::Duration::nanoseconds(2)
     }
 }
 impl AxisType for chrono::NaiveDateTime {
