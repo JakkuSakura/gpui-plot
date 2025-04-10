@@ -11,7 +11,7 @@ license = "MIT"
 gpui = { git = "https://github.com/zed-industries/zed", rev = "044eb7b99048e79da5aa3f2dd489ff3ed8f97a32" }
 parking_lot = "0.12"
 plotters = { version = "0.3.7", features = ["default"], optional = true }
-plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", rev = "23be474ba2963e651f710218cecd51022734fc65", features = ["plotters"], optional = true }
+plotters-gpui = { git = "https://github.com/JakkuSakura/plotters-gpui", rev = "b7dc582e2c13f3cc2b63370a0eb7e7b0712f211c", features = ["plotters"], optional = true }
 tracing = "0.1"
 chrono = "0.4"
 

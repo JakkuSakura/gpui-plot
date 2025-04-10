@@ -55,20 +55,27 @@ impl Line<Pixels, Pixels> {
         _cx: &mut App,
         pixel_bounds: Option<Bounds<Pixels>>,
     ) {
-        let mut line = plotters_gpui::line::Line::new();
-        for point in self.points.iter().cloned() {
-            let point = point.into();
-            if let Some(bounds) = pixel_bounds {
-                // Check if the point is within the bounds
-                if !bounds.contains(&point) {
-                    continue;
+        let mut i = 0;
+        let mut line = plotters_gpui::line::Line::new()
+            .width(self.width)
+            .color(self.color);
+        while i < self.points.len() {
+            while i < self.points.len() {
+                let point = self.points[i].into();
+                if let Some(bounds) = pixel_bounds {
+                    // Check if the point is within the bounds
+                    if !bounds.contains(&point) {
+                        // break and draw the line
+                        break;
+                    }
                 }
-            }
 
-            line.add_point(point);
+                line.add_point(point);
+                i += 1;
+            }
+            line.render_pixels(window);
+            line.clear();
         }
-        let mut line = line.width(self.width).color(self.color);
-        line.render_pixels(window);
     }
 }
 impl GeometryPixels for Line<Pixels, Pixels> {

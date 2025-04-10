@@ -3243,7 +3243,7 @@ dependencies = [
 [[package]]
 name = "plotters-gpui"
 version = "0.1.0"
-source = "git+https://github.com/JakkuSakura/plotters-gpui?rev=23be474ba2963e651f710218cecd51022734fc65#23be474ba2963e651f710218cecd51022734fc65"
+source = "git+https://github.com/JakkuSakura/plotters-gpui?rev=b7dc582e2c13f3cc2b63370a0eb7e7b0712f211c#b7dc582e2c13f3cc2b63370a0eb7e7b0712f211c"
 dependencies = [
  "gpui",
  "parking_lot",
