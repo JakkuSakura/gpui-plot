@@ -66,6 +66,7 @@ impl Line<Pixels, Pixels> {
                     // Check if the point is within the bounds
                     if !bounds.contains(&point) {
                         // break and draw the line
+                        i += 1;
                         break;
                     }
                 }
