@@ -57,8 +57,7 @@ impl PlotModel {
         unsafe {
             let axes_ptr = any.as_mut() as *const dyn Axes;
             let erased_ptr = axes_ptr as *const SharedModel<AxesModel<X, Y>>;
-            let shared_model = &*(erased_ptr as *const SharedModel<AxesModel<X, Y>>);
-            shared_model
+            (&*(erased_ptr as *const SharedModel<AxesModel<X, Y>>)) as _
         }
     }
     #[cfg(feature = "plotters")]

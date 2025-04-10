@@ -9,17 +9,14 @@ use std::sync::Arc;
 use tracing::error;
 
 const CONTENT_BOARDER: Pixels = px(30.0);
-
+type ChartFn<X, Y> = Box<dyn FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>)>;
 pub struct PlottersModel<X: AxisType, Y: AxisType> {
     pub backend_color: RGBColor,
-    pub chart: Box<dyn FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>)>,
+    pub chart: ChartFn<X, Y>,
     model: Arc<RwLock<AxesModel<X, Y>>>,
 }
 impl<X: AxisType, Y: AxisType> PlottersModel<X, Y> {
-    pub fn new(
-        model: Arc<RwLock<AxesModel<X, Y>>>,
-        chart: Box<dyn FnMut(&mut DrawingArea<GpuiBackend, Shift>, &mut AxesContext<X, Y>)>,
-    ) -> Self {
+    pub fn new(model: Arc<RwLock<AxesModel<X, Y>>>, chart: ChartFn<X, Y>) -> Self {
         Self {
             backend_color: RGBColor(0, 0, 0),
             chart,
