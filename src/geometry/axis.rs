@@ -168,6 +168,18 @@ impl AxisRangePixels {
         }
     }
 }
+impl Add<Pixels> for AxisRangePixels {
+    type Output = Self;
+
+    fn add(self, rhs: Pixels) -> Self::Output {
+        Self {
+            min: self.min + rhs,
+            max: self.max + rhs,
+            size: self.size,
+            pixels_per_element: self.pixels_per_element,
+        }
+    }
+}
 impl AxesBoundsPixels {
     pub fn from_bounds(bounds: Bounds<Pixels>) -> Self {
         Self {
@@ -227,6 +239,14 @@ impl<T: AxisType> AxisRange<T> {
             max_to_base: max,
         }
     }
+    pub fn resize(&mut self, factor: f64) {
+        let min = self.min_to_base;
+        let max = self.max_to_base;
+        let midpoint = (min + max) / 2.0;
+        let size = (max - min) * factor;
+        self.min_to_base = midpoint - size / 2.0;
+        self.max_to_base = midpoint + size / 2.0;
+    }
     pub fn set_min(&mut self, min: T) {
         self.min_to_base = (min - self.base).to_f64();
     }
@@ -261,12 +281,6 @@ impl<T: AxisType> AxisRange<T> {
         Pixels(adjusted_pixels as f32)
     }
 
-    pub fn transform_reverse(&self, bounds: AxisRangePixels, value: Pixels) -> T {
-        T::from_f64(
-            self.min().to_f64()
-                + ((value.0 - bounds.min.0) as f64 / bounds.pixels_per_element).to_f64(),
-        )
-    }
     pub fn transform_reverse_f64(&self, bounds: AxisRangePixels, value: f64) -> f64 {
         self.min_to_base + (value - bounds.min.0 as f64) / bounds.pixels_per_element
     }
@@ -355,18 +369,8 @@ impl Add<Point<Pixels>> for AxesBoundsPixels {
 
     fn add(self, rhs: Point<Pixels>) -> Self::Output {
         Self {
-            x: AxisRangePixels {
-                min: self.x.min + rhs.x,
-                max: self.x.max + rhs.x,
-                size: self.x.size,
-                pixels_per_element: self.x.pixels_per_element,
-            },
-            y: AxisRangePixels {
-                min: self.y.min + rhs.y,
-                max: self.y.max + rhs.y,
-                size: self.y.size,
-                pixels_per_element: self.y.pixels_per_element,
-            },
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
         }
     }
 }
@@ -382,16 +386,8 @@ impl<X: AxisType, Y: AxisType> AxesBounds<X, Y> {
         Self { x, y }
     }
     pub fn resize(&mut self, factor: f64) {
-        let min_x = self.x.min_to_base;
-        let max_x = self.x.max_to_base;
-        let min_y = self.y.min_to_base;
-        let max_y = self.y.max_to_base;
-        let midpoint = point((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
-        let size = point((max_x - min_x) * factor, (max_y - min_y) * factor);
-        self.x.min_to_base = midpoint.x - size.x / 2.0;
-        self.x.max_to_base = midpoint.x + size.x / 2.0;
-        self.y.min_to_base = midpoint.y - size.y / 2.0;
-        self.y.max_to_base = midpoint.y + size.y / 2.0;
+        self.x.resize(factor);
+        self.y.resize(factor);
     }
 
     pub fn transform_point(&self, bounds: AxesBoundsPixels, point: Point2<X, Y>) -> Point<Pixels> {

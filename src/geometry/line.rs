@@ -138,7 +138,7 @@ impl<X: AxisType, Y: AxisType> GeometryAxes for Line<X, Y> {
         Some(AxisRange::new(min, max))
     }
     fn render_axes(&mut self, cx: &mut AxesContext<Self::X, Self::Y>) {
-        let mut line = Line::new();
+        let mut line = Line::new().width(self.width).color(self.color);
         for point in self.points.iter().cloned() {
             let point = cx.transform_point(point);
             line.add_point(point.into());
