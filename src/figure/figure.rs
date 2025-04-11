@@ -36,6 +36,13 @@ impl FigureModel {
         self.plots.push(model);
         self.plots.last_mut().unwrap()
     }
+    pub fn add_plot_with(&mut self, plot_fn: impl FnOnce(&mut PlotModel)) {
+        #[allow(clippy::arc_with_non_send_sync)]
+        let model = Arc::new(RwLock::new(PlotModel::new()));
+        self.plots.push(model.clone());
+
+        plot_fn(&mut model.write());
+    }
     /// Update the figure model.
     pub fn update(&mut self) {
         for plot in self.plots.iter() {

@@ -63,16 +63,19 @@ impl PlotModel {
     pub fn add_axes<X: AxisType, Y: AxisType>(
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
-    ) -> &SharedModel<AxesModel<X, Y>> {
-        self.axes.push(model as SharedModel<dyn Axes>);
-        let model = self.axes.last().unwrap();
-
-        unsafe {
-            let ptr = model as *const SharedModel<dyn Axes> as *const ();
-            let ptr = ptr as *const SharedModel<AxesModel<X, Y>>;
-            &*ptr
-        }
+    ) -> SharedModel<AxesModel<X, Y>> {
+        self.axes.push(model.clone() as SharedModel<dyn Axes>);
+        model
     }
+    pub fn add_axes_with<X: AxisType, Y: AxisType>(
+        &mut self,
+        model: SharedModel<AxesModel<X, Y>>,
+        plot_fn: impl FnOnce(&mut AxesModel<X, Y>) + 'static,
+    ) {
+        plot_fn(&mut model.write());
+        self.axes.push(model as SharedModel<dyn Axes>);
+    }
+
     #[cfg(feature = "plotters")]
     pub fn add_axes_plotters<X: AxisType, Y: AxisType>(
         &mut self,

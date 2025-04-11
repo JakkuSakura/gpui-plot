@@ -14,6 +14,7 @@ fn parse_time(t: &str) -> chrono::NaiveDate {
     chrono::NaiveDate::parse_from_str(t, "%Y-%m-%d").unwrap()
 }
 
+#[derive(Clone)]
 struct StockChart {
     data: Vec<(&'static str, f32, f32, f32, f32)>,
 }
@@ -69,7 +70,9 @@ impl StockChart {
 
 #[allow(unused)]
 struct MainView {
+    axes_model: Arc<RwLock<AxesModel<chrono::NaiveDate, f32>>>,
     model: Arc<RwLock<FigureModel>>,
+    stock_chart: StockChart,
     figure: Entity<FigureView>,
 }
 
@@ -88,11 +91,25 @@ impl MainView {
         );
         let grid_type = GridModel::from_numbers(10, 10);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid_type)));
-        {
-            let mut model = model.write();
-            let mut plot = model.add_plot().write();
 
-            plot.add_axes_plotters(axes_model.clone(), move |area, cx| {
+        Self {
+            axes_model: axes_model.clone(),
+            stock_chart,
+            figure: cx.new(|_| FigureView::new(model.clone())),
+            model,
+        }
+    }
+}
+
+impl Render for MainView {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let id = cx.entity_id();
+        cx.defer(move |app| app.notify(id));
+        let mut model = self.model.write();
+        model.clear_plots();
+        model.add_plot_with(|plot| {
+            let stock_chart = self.stock_chart.clone();
+            plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
                 let mut chart = ChartBuilder::on(&area)
                     .x_label_area_size(40)
                     .y_label_area_size(40)
@@ -127,19 +144,7 @@ impl MainView {
                     )
                     .unwrap();
             })
-        }
-        Self {
-            figure: cx.new(|_| FigureView::new(model.clone())),
-            model,
-        }
-    }
-}
-
-impl Render for MainView {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let id = cx.entity_id();
-        cx.defer(move |app| app.notify(id));
-
+        });
         div()
             .size_full()
             .flex_col()

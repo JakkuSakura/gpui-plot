@@ -45,33 +45,34 @@ impl Render for MainView {
 
         let mut model = self.model.write();
         model.clear_plots();
-        let mut plot = model.add_plot().write();
-        plot.clear_axes();
-        self.axes_model.write().clear_elements();
-        plot.add_axes(self.axes_model.clone())
-            .write()
-            .plot(self.animation.clone());
-        let mut animation = self.animation.clone();
-        plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
-            let mut chart = ChartBuilder::on(&area)
-                .x_label_area_size(30)
-                .y_label_area_size(30)
-                .build_cartesian_2d(cx.axes_bounds.x.to_range(), cx.axes_bounds.y.to_range())
-                .unwrap();
-
-            chart.configure_mesh().draw().unwrap();
-            for shift in 0..20 {
-                let line = animation.next_line((shift * 5) as f64, false);
-
-                chart
-                    .draw_series(LineSeries::new(
-                        line.points.iter().map(|p| (p.x, p.y)),
-                        &BLACK,
-                    ))
+        model.add_plot_with(|plot| {
+            let animation = self.animation.clone();
+            plot.add_axes_with(self.axes_model.clone(), move |axes| {
+                axes.clear_elements();
+                axes.plot(animation.clone());
+            });
+            let mut animation = self.animation.clone();
+            plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
+                let mut chart = ChartBuilder::on(&area)
+                    .x_label_area_size(30)
+                    .y_label_area_size(30)
+                    .build_cartesian_2d(cx.axes_bounds.x.to_range(), cx.axes_bounds.y.to_range())
                     .unwrap();
-            }
+
+                chart.configure_mesh().draw().unwrap();
+                for shift in 0..20 {
+                    let line = animation.next_line((shift * 5) as f64, false);
+
+                    chart
+                        .draw_series(LineSeries::new(
+                            line.points.iter().map(|p| (p.x, p.y)),
+                            &BLACK,
+                        ))
+                        .unwrap();
+                }
+            });
+            plot.update();
         });
-        plot.update();
 
         div()
             .size_full()
