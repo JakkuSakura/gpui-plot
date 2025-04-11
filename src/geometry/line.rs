@@ -1,6 +1,7 @@
 use crate::figure::axes::AxesContext;
 use crate::geometry::{AxisRange, AxisType, GeometryAxes, GeometryPixels, Point2};
-use gpui::{App, Bounds, Hsla, Pixels, Window};
+use gpui::{px, App, Bounds, Hsla, PathBuilder, Pixels, Window};
+use tracing::warn;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LineDirection {
@@ -40,12 +41,19 @@ impl<X: AxisType, Y: AxisType> Line<X, Y> {
         }
         line
     }
-    pub fn width(mut self, width: f64) -> Self {
-        self.width = width.into();
+    pub fn width(mut self, width: Pixels) -> Self {
+        self.width = width;
+        self
+    }
+    pub fn color(mut self, color: Hsla) -> Self {
+        self.color = color;
         self
     }
     pub fn add_point(&mut self, point: Point2<X, Y>) {
         self.points.push(point);
+    }
+    pub fn clear(&mut self) {
+        self.points.clear();
     }
 }
 impl Line<Pixels, Pixels> {
@@ -55,27 +63,48 @@ impl Line<Pixels, Pixels> {
         _cx: &mut App,
         pixel_bounds: Option<Bounds<Pixels>>,
     ) {
-        let mut i = 0;
-        let mut line = plotters_gpui::line::Line::new()
-            .width(self.width)
-            .color(self.color);
-        while i < self.points.len() {
-            while i < self.points.len() {
-                let point = self.points[i].into();
-                if let Some(bounds) = pixel_bounds {
-                    // Check if the point is within the bounds
-                    if !bounds.contains(&point) {
-                        // break and draw the line
+        match pixel_bounds {
+            Some(bounds) => {
+                let mut i = 0;
+                let mut line = Line::new().width(self.width).color(self.color);
+                while i < self.points.len() {
+                    while i < self.points.len() {
+                        let point = self.points[i];
+
+                        // Check if the point is within the bounds
+                        if !bounds.contains(&point.into()) {
+                            // break and draw the line
+                            i += 1;
+                            break;
+                        }
+
+                        line.add_point(point);
                         i += 1;
-                        break;
                     }
+                    line.render(window, _cx, None);
+                    line.clear();
+                }
+            }
+            None => {
+                if self.points.is_empty() {
+                    warn!("Line must have at least 1 points to render");
+                    return;
                 }
 
-                line.add_point(point);
-                i += 1;
+                let mut builder = PathBuilder::stroke(px(self.width.0));
+                let Some(first_p) = self.points.first() else {
+                    return;
+                };
+
+                builder.move_to((*first_p).into());
+                for p in self.points.iter().skip(1) {
+                    builder.line_to((*p).into());
+                }
+
+                if let Ok(path) = builder.build() {
+                    window.paint_path(path, self.color);
+                }
             }
-            line.render_pixels(window);
-            line.clear();
         }
     }
 }
