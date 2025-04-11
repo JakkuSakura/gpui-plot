@@ -70,7 +70,7 @@ impl PlotModel {
     pub fn add_axes_with<X: AxisType, Y: AxisType>(
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
-        plot_fn: impl FnOnce(&mut AxesModel<X, Y>) + 'static,
+        plot_fn: impl FnOnce(&mut AxesModel<X, Y>),
     ) {
         plot_fn(&mut model.write());
         self.axes.push(model as SharedModel<dyn Axes>);

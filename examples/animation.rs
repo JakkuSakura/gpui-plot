@@ -46,10 +46,9 @@ impl Render for MainView {
         let mut model = self.model.write();
         model.clear_plots();
         model.add_plot_with(|plot| {
-            let animation = self.animation.clone();
-            plot.add_axes_with(self.axes_model.clone(), move |axes| {
+            plot.add_axes_with(self.axes_model.clone(), |axes| {
                 axes.clear_elements();
-                axes.plot(animation.clone());
+                axes.plot(self.animation.clone());
             });
             let mut animation = self.animation.clone();
             plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
