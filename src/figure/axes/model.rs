@@ -46,7 +46,7 @@ impl<X: AxisType, Y: AxisType> Debug for AxesModel<X, Y> {
 
 impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
     pub fn new(axes_bounds: AxesBounds<X, Y>, grid: GridModel<X, Y>) -> Self {
-        Self {
+        let mut this = Self {
             axes_bounds,
             pixel_bounds: AxesBoundsPixels::from_bounds(Bounds::default()),
             grid,
@@ -55,7 +55,11 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             event_processed: false,
             elements: Vec::new(),
             update_type: ViewUpdateType::Free,
-        }
+        };
+
+        let cx1 = AxesContext::new_without_context(&this);
+        this.grid.try_update_grid(&cx1);
+        this
     }
     pub fn clear_elements(&mut self) {
         self.elements.clear();
@@ -133,9 +137,6 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
 
     fn new_render(&mut self) {
         self.event_processed = false;
-
-        let cx1 = AxesContext::new_without_context(self);
-        self.grid.try_update_grid(&cx1)
     }
     fn pan_begin(&mut self, position: Point<Pixels>) {
         if matches!(self.update_type, ViewUpdateType::Fixed) {
