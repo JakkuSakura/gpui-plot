@@ -1,6 +1,6 @@
 use gpui::{
-    div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Window, WindowBounds,
-    WindowOptions,
+    div, prelude::*, px, size, App, AppContext, Application, Bounds, Entity, Hsla, Window,
+    WindowBounds, WindowOptions,
 };
 use gpui_plot::figure::axes::AxesContext;
 use gpui_plot::figure::axes::AxesModel;
@@ -65,7 +65,7 @@ impl Render for MainView {
                     chart
                         .draw_series(LineSeries::new(
                             line.points.iter().map(|p| (p.x, p.y)),
-                            &BLACK,
+                            &RED,
                         ))
                         .unwrap();
                 }
@@ -98,7 +98,7 @@ impl Animation {
         }
     }
     fn next_line(&mut self, shift: f64, transpose: bool) -> Line<f64, f64> {
-        let mut line = Line::new();
+        let mut line = Line::new().color(Hsla::green());
         let t = self.time_start.elapsed().as_secs_f64() * 10.0;
         let mut x = self.start;
         while x <= self.end {

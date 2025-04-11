@@ -3,18 +3,11 @@ use crate::geometry::{AxisRange, AxisType, GeometryAxes, GeometryPixels, Point2}
 use gpui::{px, App, Bounds, Hsla, PathBuilder, Pixels, Window};
 use tracing::warn;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum LineDirection {
-    Horizontal,
-    Vertical,
-    Any,
-}
 #[derive(Clone, Debug)]
 pub struct Line<X: AxisType, Y: AxisType> {
     pub points: Vec<Point2<X, Y>>,
     pub width: Pixels,
     pub color: Hsla,
-    pub direction: LineDirection,
 }
 impl Default for Line<Pixels, Pixels> {
     fn default() -> Self {
@@ -27,18 +20,12 @@ impl<X: AxisType, Y: AxisType> Line<X, Y> {
             points: vec![],
             width: 1.0.into(),
             color: gpui::black(),
-            direction: LineDirection::Any,
         }
     }
     pub fn between_points(start: Point2<X, Y>, end: Point2<X, Y>) -> Self {
         let mut line = Self::new();
         line.add_point(start);
         line.add_point(end);
-        if start.x == end.x {
-            line.direction = LineDirection::Vertical;
-        } else if start.y == end.y {
-            line.direction = LineDirection::Horizontal;
-        }
         line
     }
     pub fn width(mut self, width: Pixels) -> Self {

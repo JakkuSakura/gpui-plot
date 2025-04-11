@@ -257,9 +257,7 @@ impl<T: AxisType> AxisRange<T> {
             (value - self.min()).to_f64() * bounds.pixels_per_element + bounds.min.0 as f64;
         Pixels(adjusted_pixels as f32)
     }
-    pub fn transform_f64(&self, bounds: AxisRangePixels, value: T) -> f64 {
-        (value.to_f64() - self.min_to_base) * bounds.pixels_per_element + bounds.min.0 as f64
-    }
+
     pub fn transform_reverse(&self, bounds: AxisRangePixels, value: Pixels) -> T {
         T::from_f64(
             self.min().to_f64()
@@ -380,6 +378,12 @@ impl<X: AxisType, Y: AxisType> AxesBounds<X, Y> {
     pub fn new(x: AxisRange<X>, y: AxisRange<Y>) -> Self {
         Self { x, y }
     }
+    pub fn resize(&mut self, factor: f64) {
+        self.x.min_to_base *= factor;
+        self.x.max_to_base *= factor;
+        self.y.min_to_base *= factor;
+        self.y.max_to_base *= factor;
+    }
 
     pub fn transform_point(&self, bounds: AxesBoundsPixels, point: Point2<X, Y>) -> Point<Pixels> {
         Point {
@@ -387,22 +391,7 @@ impl<X: AxisType, Y: AxisType> AxesBounds<X, Y> {
             y: self.y.transform(bounds.y, point.y),
         }
     }
-    pub fn transform_point_f64(&self, bounds: AxesBoundsPixels, p: Point2<X, Y>) -> Point<f64> {
-        point(
-            self.x.transform_f64(bounds.x, p.x),
-            self.y.transform_f64(bounds.y, p.y),
-        )
-    }
-    pub fn transform_point_reverse(
-        &self,
-        bounds: AxesBoundsPixels,
-        point: Point<Pixels>,
-    ) -> Point2<X, Y> {
-        Point2 {
-            x: self.x.transform_reverse(bounds.x, point.x),
-            y: self.y.transform_reverse(bounds.y, point.y),
-        }
-    }
+
     pub fn transform_point_reverse_f64(
         &self,
         bounds: AxesBoundsPixels,

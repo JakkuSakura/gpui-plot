@@ -84,10 +84,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
     pub fn transform_point(&self, point: Point2<X, Y>) -> Point<Pixels> {
         self.axes_bounds.transform_point(self.pixel_bounds, point)
     }
-    pub fn transform_point_reverse(&self, point: Point<Pixels>) -> Point2<X, Y> {
-        self.axes_bounds
-            .transform_point_reverse(self.pixel_bounds, point)
-    }
+
     pub fn update(&mut self) {
         self.update_type = ViewUpdateType::Auto;
         // update the axes bounds
@@ -120,9 +117,10 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             }
         }
 
-        let Some(new_pixel_bounds) = new_axes_bounds else {
+        let Some(mut new_pixel_bounds) = new_axes_bounds else {
             return;
         };
+        new_pixel_bounds.resize(1.1);
         self.axes_bounds = new_pixel_bounds;
 
         let cx1 = AxesContext::new_without_context(self);
