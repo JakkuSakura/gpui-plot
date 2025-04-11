@@ -22,7 +22,6 @@ pub trait AxisType:
     fn format(&self) -> String;
     fn to_f64(&self) -> f64;
     fn from_f64(value: f64) -> Self;
-    fn min_delta() -> Self::Delta;
 }
 impl AxisType for f32 {
     type Delta = f32;
@@ -35,10 +34,6 @@ impl AxisType for f32 {
     fn from_f64(value: f64) -> Self {
         value as f32
     }
-
-    fn min_delta() -> Self::Delta {
-        f32::MIN_POSITIVE * 2.0
-    }
 }
 impl AxisType for f64 {
     type Delta = f64;
@@ -50,9 +45,6 @@ impl AxisType for f64 {
     }
     fn from_f64(value: f64) -> Self {
         value
-    }
-    fn min_delta() -> Self::Delta {
-        f64::MIN_POSITIVE * 2.0
     }
 }
 impl AxisType for NaiveDate {
@@ -72,10 +64,6 @@ impl AxisType for NaiveDate {
         let date = chrono::DateTime::from_timestamp_nanos(timestamp);
         date.date_naive()
     }
-
-    fn min_delta() -> Self::Delta {
-        chrono::Duration::days(2)
-    }
 }
 
 impl AxisType for chrono::NaiveDateTime {
@@ -90,9 +78,6 @@ impl AxisType for chrono::NaiveDateTime {
         let timestamp = value as i64;
         let date = chrono::DateTime::from_timestamp_nanos(timestamp);
         date.naive_utc()
-    }
-    fn min_delta() -> Self::Delta {
-        chrono::Duration::nanoseconds(2)
     }
 }
 impl AxisType for chrono::NaiveTime {
@@ -109,8 +94,18 @@ impl AxisType for chrono::NaiveTime {
         let time = chrono::NaiveTime::from_num_seconds_from_midnight_opt(seconds, nanoseconds);
         time.expect("out of range")
     }
-    fn min_delta() -> Self::Delta {
-        chrono::Duration::nanoseconds(2)
+}
+impl AxisType for chrono::DateTime<chrono::Utc> {
+    type Delta = chrono::Duration;
+    fn format(&self) -> String {
+        self.to_string()
+    }
+    fn to_f64(&self) -> f64 {
+        self.timestamp_nanos_opt().unwrap() as f64
+    }
+    fn from_f64(value: f64) -> Self {
+        let timestamp = value as i64;
+        chrono::DateTime::<chrono::Utc>::from_timestamp_nanos(timestamp)
     }
 }
 impl AxisType for chrono::Duration {
@@ -123,9 +118,6 @@ impl AxisType for chrono::Duration {
     }
     fn from_f64(value: f64) -> Self {
         chrono::Duration::nanoseconds(value as i64)
-    }
-    fn min_delta() -> Self::Delta {
-        chrono::Duration::nanoseconds(2)
     }
 }
 
@@ -142,9 +134,6 @@ impl AxisType for std::time::Duration {
     fn from_f64(value: f64) -> Self {
         std::time::Duration::from_nanos(value as u64)
     }
-    fn min_delta() -> Self::Delta {
-        std::time::Duration::from_nanos(2)
-    }
 }
 
 /// more for internal use
@@ -160,9 +149,6 @@ impl AxisType for Pixels {
 
     fn from_f64(value: f64) -> Self {
         Pixels(value as f32)
-    }
-    fn min_delta() -> Self::Delta {
-        px(2.0)
     }
 }
 #[derive(Clone, Copy, Debug)]
