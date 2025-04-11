@@ -23,7 +23,7 @@ pub struct PlotModel {
     pub zoom_rubberband_precision: f64,
     pub fps: FpsModel,
     pub bounds: Bounds<Pixels>,
-    pub axes: Vec<Box<dyn Axes>>,
+    pub axes: Vec<SharedModel<dyn Axes>>,
 }
 impl Debug for PlotModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -64,13 +64,13 @@ impl PlotModel {
         &mut self,
         model: SharedModel<AxesModel<X, Y>>,
     ) -> &SharedModel<AxesModel<X, Y>> {
-        self.axes.push(Box::new(model));
-        let any = self.axes.last_mut().unwrap();
+        self.axes.push(model as SharedModel<dyn Axes>);
+        let model = self.axes.last().unwrap();
 
         unsafe {
-            let axes_ptr = any.as_mut() as *const dyn Axes;
-            let erased_ptr = axes_ptr as *const SharedModel<AxesModel<X, Y>>;
-            (&*(erased_ptr as *const SharedModel<AxesModel<X, Y>>)) as _
+            let ptr = model as *const SharedModel<dyn Axes> as *const ();
+            let ptr = ptr as *const SharedModel<AxesModel<X, Y>>;
+            &*ptr
         }
     }
     #[cfg(feature = "plotters")]
@@ -81,11 +81,11 @@ impl PlotModel {
     ) {
         let axes = PlottersModel::new(model, Box::new(draw));
 
-        self.axes.push(Box::new(axes));
+        self.axes.push(Arc::new(RwLock::new(axes)));
     }
     pub fn update(&mut self) {
         for axes in self.axes.iter_mut() {
-            axes.update();
+            axes.write().update();
         }
     }
     pub fn pan_begin(&mut self, position: Point<Pixels>) {
@@ -94,7 +94,7 @@ impl PlotModel {
         }
         self.panning = true;
         for axes in self.axes.iter_mut() {
-            axes.pan_begin(position);
+            axes.write().pan_begin(position);
         }
     }
     pub fn pan(&mut self, event: &MouseMoveEvent) {
@@ -102,7 +102,7 @@ impl PlotModel {
             return;
         }
         for axes in self.axes.iter_mut() {
-            axes.pan(event);
+            axes.write().pan(event);
         }
     }
     pub fn pan_end(&mut self) {
@@ -111,7 +111,7 @@ impl PlotModel {
         }
         self.panning = false;
         for axes in self.axes.iter_mut() {
-            axes.pan_end();
+            axes.write().pan_end();
         }
     }
     pub fn zoom_begin(&mut self, position: Point<Pixels>) {
@@ -120,7 +120,7 @@ impl PlotModel {
         }
         self.zooming = true;
         for axes in self.axes.iter_mut() {
-            axes.zoom_begin(position);
+            axes.write().zoom_begin(position);
         }
     }
     pub fn zoom(&mut self, factor: f64) {
@@ -128,7 +128,7 @@ impl PlotModel {
             return;
         }
         for axes in self.axes.iter_mut() {
-            axes.zoom(factor);
+            axes.write().zoom(factor);
         }
     }
     pub fn zoom_end(&mut self) {
@@ -137,7 +137,7 @@ impl PlotModel {
         }
         self.zooming = false;
         for axes in self.axes.iter_mut() {
-            axes.zoom_end();
+            axes.write().zoom_end();
         }
     }
 }
@@ -206,8 +206,10 @@ impl PlotView {
 impl Render for PlotView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<'_, Self>) -> impl IntoElement {
         self.try_clean_zoom();
-        for axes in self.model.write().axes.iter_mut() {
-            axes.new_render();
+        let len = self.model.read().axes.len();
+        for axes in 0..len {
+            let axes = self.model.read().axes[axes].clone();
+            axes.write().new_render();
         }
 
         div()
@@ -218,7 +220,7 @@ impl Render for PlotView {
                     move |bounds, _ele: (), window, cx| {
                         this.model.write().bounds = bounds;
                         for axes in this.model.write().axes.iter_mut() {
-                            axes.render(bounds, window, cx);
+                            axes.write().render(bounds, window, cx);
                         }
                     }
                 })

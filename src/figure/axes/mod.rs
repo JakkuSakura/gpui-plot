@@ -9,7 +9,6 @@ pub use plotters::*;
 use std::any::Any;
 pub use view::*;
 
-use crate::figure::SharedModel;
 use crate::geometry::{AxesBounds, AxesBoundsPixels, AxisType, GeometryAxes, Point2};
 use gpui::{App, Bounds, MouseMoveEvent, Pixels, Point, Window};
 
@@ -24,39 +23,7 @@ pub trait Axes: Any {
     fn zoom_end(&mut self);
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App);
 }
-impl<T: Axes + 'static> Axes for SharedModel<T> {
-    fn update(&mut self) {
-        self.write().update();
-    }
 
-    fn new_render(&mut self) {
-        self.write().new_render();
-    }
-    fn pan_begin(&mut self, position: Point<Pixels>) {
-        self.write().pan_begin(position);
-    }
-
-    fn pan(&mut self, event: &MouseMoveEvent) {
-        self.write().pan(event);
-    }
-
-    fn pan_end(&mut self) {
-        self.write().pan_end();
-    }
-    fn zoom_begin(&mut self, position: Point<Pixels>) {
-        self.write().zoom_begin(position);
-    }
-    fn zoom(&mut self, delta: f64) {
-        self.write().zoom(delta);
-    }
-    fn zoom_end(&mut self) {
-        self.write().zoom_end();
-    }
-
-    fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
-        self.write().render(bounds, window, cx);
-    }
-}
 pub struct AxesContext<'a, X: AxisType, Y: AxisType> {
     pub axes_bounds: AxesBounds<X, Y>,
     pub pixel_bounds: AxesBoundsPixels,
