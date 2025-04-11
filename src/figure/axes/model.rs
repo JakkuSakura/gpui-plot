@@ -1,8 +1,7 @@
 use crate::figure::axes::{Axes, AxesContext, AxesView};
 use crate::figure::grid::GridModel;
 use crate::geometry::{
-    AxesBounds, AxesBoundsPixels, AxisRange, AxisType, GeometryAxes, GeometryAxesFn,
-    GeometryPixels, Point2,
+    AxesBounds, AxesBoundsPixels, AxisType, GeometryAxes, GeometryAxesFn, GeometryPixels, Point2,
 };
 use gpui::{size, App, Bounds, MouseMoveEvent, Pixels, Point, Window};
 use std::fmt::Debug;
@@ -10,6 +9,13 @@ use std::fmt::Debug;
 pub(crate) struct PanState<X: AxisType, Y: AxisType> {
     initial_axes_bounds: AxesBounds<X, Y>,
     initial_pan_position: Point<Pixels>,
+}
+pub(crate) struct ZoomState<X: AxisType, Y: AxisType> {
+    initial_axes_bounds: AxesBounds<X, Y>,
+    pixel_bounds: AxesBoundsPixels,
+    initial_zoom_position: Point<Pixels>,
+    zoom_point: Point<f64>,
+    accumulated_zoom_delta: f64,
 }
 
 pub enum ViewUpdateType {
@@ -26,6 +32,7 @@ pub struct AxesModel<X: AxisType, Y: AxisType> {
     pub pixel_bounds: AxesBoundsPixels,
     pub grid: GridModel<X, Y>,
     pub(crate) pan_state: Option<PanState<X, Y>>,
+    pub(crate) zoom_state: Option<ZoomState<X, Y>>,
     pub(crate) event_processed: bool,
     pub(crate) elements: Vec<Box<dyn GeometryAxes<X = X, Y = Y>>>,
     pub update_type: ViewUpdateType,
@@ -45,6 +52,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             pixel_bounds: AxesBoundsPixels::from_bounds(Bounds::default()),
             grid,
             pan_state: None,
+            zoom_state: None,
             event_processed: false,
             elements: Vec::new(),
             update_type: ViewUpdateType::Free,
@@ -165,122 +173,73 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
         }
         self.pan_state = None;
     }
-    fn zoom(&mut self, point: Point<Pixels>, delta: f64) {
+    fn zoom_begin(&mut self, position: Point<Pixels>) {
         if self.event_processed {
             return;
         }
-        let zoom_point = self
+        self.zoom_state = Some(ZoomState {
+            initial_axes_bounds: self.axes_bounds,
+            pixel_bounds: self.pixel_bounds,
+            initial_zoom_position: position,
+            accumulated_zoom_delta: 0.0,
+            zoom_point: self
+                .axes_bounds
+                .transform_point_reverse_f64(self.pixel_bounds, position),
+        });
+    }
+    fn zoom(&mut self, delta: f64) {
+        if self.event_processed {
+            return;
+        }
+        let Some(zoom_state) = &mut self.zoom_state else {
+            return;
+        };
+        let zoom_point = zoom_state.zoom_point;
+        zoom_state.accumulated_zoom_delta += delta;
+        let zoom_factor = (-zoom_state.accumulated_zoom_delta).exp();
+
+        self.axes_bounds.x.min_to_base =
+            (zoom_state.initial_axes_bounds.x.min_to_base - zoom_point.x) * zoom_factor
+                + zoom_point.x;
+        self.axes_bounds.x.max_to_base =
+            (zoom_state.initial_axes_bounds.x.max_to_base - zoom_point.x) * zoom_factor
+                + zoom_point.x;
+        self.axes_bounds.y.min_to_base =
+            (zoom_state.initial_axes_bounds.y.min_to_base - zoom_point.y) * zoom_factor
+                + zoom_point.y;
+        self.axes_bounds.y.max_to_base =
+            (zoom_state.initial_axes_bounds.y.max_to_base - zoom_point.y) * zoom_factor
+                + zoom_point.y;
+        self.pixel_bounds.x.pixels_per_element =
+            zoom_state.pixel_bounds.x.pixels_per_element / zoom_factor;
+        self.pixel_bounds.y.pixels_per_element =
+            zoom_state.pixel_bounds.y.pixels_per_element / zoom_factor;
+        let afterwards_zoom_point = self
             .axes_bounds
-            .transform_point_reverse_f64(self.pixel_bounds, point);
-        let zoom_factor = 1.0 + delta * 1.0;
-
-        let min_point = self.axes_bounds.min_point_f64();
-        let max_point = self.axes_bounds.max_point_f64();
-        let (min, max) = zoom_with_point(zoom_point, min_point, max_point, zoom_factor);
-
-        self.axes_bounds = AxesBounds::new(
-            AxisRange::new_with_base_f64(self.axes_bounds.x.base, min.x, max.x),
-            AxisRange::new_with_base_f64(self.axes_bounds.y.base, min.y, max.y),
-        );
+            .transform_point_reverse_f64(self.pixel_bounds, zoom_state.initial_zoom_position);
+        let diff = zoom_point - afterwards_zoom_point;
+        self.axes_bounds.x.min_to_base += diff.x;
+        self.axes_bounds.x.max_to_base += diff.x;
+        self.axes_bounds.y.min_to_base += diff.y;
+        self.axes_bounds.y.max_to_base += diff.y;
+        // let adjusted_zoom_point = self
+        //     .axes_bounds
+        //     .transform_point_reverse_f64(self.pixel_bounds, zoom_state.initial_zoom_position);
+        // assert_eq!(self.pixel_bounds.x, adjusted_zoom_point.x);
+        // assert_eq!(self.pixel_bounds.y, adjusted_zoom_point.y);
 
         let cx1 = AxesContext::new_without_context(self);
         self.grid.try_update_grid(&cx1);
     }
+
+    fn zoom_end(&mut self) {
+        if self.event_processed {
+            return;
+        }
+        self.zoom_state = None;
+    }
+
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         AxesView::new(self).render_pixels(bounds, window, cx);
-    }
-}
-
-fn zoom_with_point(
-    zoom_point: Point<f64>,
-    min_point: Point<f64>,
-    max_point: Point<f64>,
-    zoom_factor: f64,
-) -> (Point<f64>, Point<f64>) {
-    // println!(
-    //     "zoom_with_point: {:?} {:?} {:?} {}",
-    //     zoom_point, min_point, max_point, zoom_factor
-    // );
-    // now we have (min, p) and (p, end)
-    // we keep p to zero and scale the rest (min - p, 0) and (0, end - p)
-    let min_shifted = min_point - zoom_point;
-    let max_shifted = max_point - zoom_point;
-    let min_zoomed = min_shifted * zoom_factor;
-    let max_zoomed = max_shifted * zoom_factor;
-
-    // map back to the view
-    let min = zoom_point + min_zoomed;
-    let max = zoom_point + max_zoomed;
-    // println!("zoom_with_point result: {:?} {:?}", min, max);
-
-    (min, max)
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use gpui::point;
-    #[test]
-    fn test_zoom_with_point_1() {
-        let zoom_point = point(0.0, 0.0);
-        let min_point = point(-10.0, -10.0);
-        let max_point = point(10.0, 10.0);
-        let zoom_factor = 2.0;
-        let (min, max) = zoom_with_point(zoom_point, min_point, max_point, zoom_factor);
-        assert_eq!(min, point(-20.0, -20.0));
-        assert_eq!(max, point(20.0, 20.0));
-    }
-    #[test]
-    fn test_zoom_with_point_2() {
-        let zoom_point = point(0.0, 0.0);
-        let min_point = point(-10.0, -10.0);
-        let max_point = point(10.0, 10.0);
-        let zoom_factor = 0.5;
-        let (min, max) = zoom_with_point(zoom_point, min_point, max_point, zoom_factor);
-        assert_eq!(min, point(-5.0, -5.0));
-        assert_eq!(max, point(5.0, 5.0));
-    }
-    #[test]
-    fn test_zoom_with_point_series() {
-        let zoom_point = point(0.0, 0.0);
-        let min_point = point(-10.0, -10.0);
-        let max_point = point(10.0, 10.0);
-        let zoom_factors = [0.9, 1.0, 1.1, 1.2];
-        let mut min = min_point;
-        let mut max = max_point;
-        for zoom_factor in zoom_factors.iter() {
-            let (min1, max1) = zoom_with_point(zoom_point, min, max, *zoom_factor);
-            min = min1;
-            max = max1;
-        }
-        for zoom_factor in zoom_factors.iter().rev() {
-            let zoom_factor = 1.0 / zoom_factor;
-            let (min1, max1) = zoom_with_point(zoom_point, min, max, zoom_factor);
-            min = min1;
-            max = max1;
-        }
-        assert_eq!(min, min_point);
-        assert_eq!(max, max_point);
-    }
-    #[test]
-    fn test_zoom_with_point_series_offset() {
-        let zoom_point = point(5.0, 5.0);
-        let min_point = point(-10.0, -10.0);
-        let max_point = point(10.0, 10.0);
-        let zoom_factors = [0.9, 1.0, 1.1, 1.2];
-        let mut min = min_point;
-        let mut max = max_point;
-        for zoom_factor in zoom_factors.iter() {
-            let (min1, max1) = zoom_with_point(zoom_point, min, max, *zoom_factor);
-            min = min1;
-            max = max1;
-        }
-        for zoom_factor in zoom_factors.iter().rev() {
-            let zoom_factor = 1.0 / zoom_factor;
-            let (min1, max1) = zoom_with_point(zoom_point, min, max, zoom_factor);
-            min = min1;
-            max = max1;
-        }
-        assert_eq!(min, min_point);
-        assert_eq!(max, max_point);
     }
 }

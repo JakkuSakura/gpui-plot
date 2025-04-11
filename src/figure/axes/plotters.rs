@@ -44,9 +44,14 @@ impl<X: AxisType, Y: AxisType> Axes for PlottersModel<X, Y> {
     fn pan_end(&mut self) {
         self.model.write().pan_end();
     }
-
-    fn zoom(&mut self, point: Point<Pixels>, delta: f64) {
-        self.model.write().zoom(point, delta);
+    fn zoom_begin(&mut self, position: Point<Pixels>) {
+        self.model.write().zoom_begin(position);
+    }
+    fn zoom(&mut self, delta: f64) {
+        self.model.write().zoom(delta);
+    }
+    fn zoom_end(&mut self) {
+        self.model.write().zoom_end();
     }
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
         PlottersView::new(self).render_pixels(bounds, window, cx);

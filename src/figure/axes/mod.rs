@@ -19,7 +19,9 @@ pub trait Axes: Any {
     fn pan_begin(&mut self, position: Point<Pixels>);
     fn pan(&mut self, event: &MouseMoveEvent);
     fn pan_end(&mut self);
-    fn zoom(&mut self, point: Point<Pixels>, delta: f64);
+    fn zoom_begin(&mut self, position: Point<Pixels>);
+    fn zoom(&mut self, zoom_out: f64);
+    fn zoom_end(&mut self);
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App);
 }
 impl<T: Axes + 'static> Axes for SharedModel<T> {
@@ -41,9 +43,14 @@ impl<T: Axes + 'static> Axes for SharedModel<T> {
     fn pan_end(&mut self) {
         self.write().pan_end();
     }
-
-    fn zoom(&mut self, point: Point<Pixels>, delta: f64) {
-        self.write().zoom(point, delta);
+    fn zoom_begin(&mut self, position: Point<Pixels>) {
+        self.write().zoom_begin(position);
+    }
+    fn zoom(&mut self, delta: f64) {
+        self.write().zoom(delta);
+    }
+    fn zoom_end(&mut self) {
+        self.write().zoom_end();
     }
 
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {

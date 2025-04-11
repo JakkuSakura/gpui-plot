@@ -214,8 +214,8 @@ impl AxesBoundsPixels {
 #[derive(Clone, Copy, Debug)]
 pub struct AxisRange<T> {
     pub(crate) base: T,
-    min_to_base: f64,
-    max_to_base: f64,
+    pub(crate) min_to_base: f64,
+    pub(crate) max_to_base: f64,
 }
 
 impl<T: AxisType> AxisRange<T> {
