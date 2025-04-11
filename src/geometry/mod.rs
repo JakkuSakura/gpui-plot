@@ -5,6 +5,7 @@ use std::marker::PhantomData;
 
 mod axis;
 mod line;
+mod marker;
 mod point;
 mod size;
 mod text;
@@ -13,6 +14,7 @@ use crate::figure::axes::AxesContext;
 use crate::figure::SharedModel;
 pub use axis::*;
 pub use line::*;
+pub use marker::*;
 pub use point::*;
 pub use size::*;
 pub use text::*;

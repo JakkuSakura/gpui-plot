@@ -6,7 +6,9 @@ use gpui_plot::figure::axes::AxesContext;
 use gpui_plot::figure::axes::AxesModel;
 use gpui_plot::figure::figure::{FigureModel, FigureView};
 use gpui_plot::figure::grid::GridModel;
-use gpui_plot::geometry::{point2, AxesBounds, AxisRange, GeometryAxes, Line};
+use gpui_plot::geometry::{
+    point2, AxesBounds, AxisRange, GeometryAxes, Line, Marker, MarkerShape, Markers,
+};
 use parking_lot::RwLock;
 use plotters::prelude::*;
 use std::sync::Arc;
@@ -49,6 +51,26 @@ impl Render for MainView {
             plot.add_axes_with(self.axes_model.clone(), |axes| {
                 axes.clear_elements();
                 axes.plot(self.animation.clone());
+
+                let mut markers = Markers::new();
+                markers
+                    .add_marker(Marker::new(point2(0.0, 0.0), px(10.0)).shape(MarkerShape::Circle));
+                markers.add_marker(
+                    Marker::new(point2(100.0, 0.0), px(10.0))
+                        .shape(MarkerShape::Square)
+                        .color(Hsla::red()),
+                );
+                markers.add_marker(
+                    Marker::new(point2(0.0, 100.0), px(10.0))
+                        .shape(MarkerShape::TriangleUp)
+                        .color(Hsla::green()),
+                );
+                markers.add_marker(
+                    Marker::new(point2(100.0, 100.0), px(10.0))
+                        .shape(MarkerShape::TriangleDown)
+                        .color(Hsla::blue()),
+                );
+                axes.plot(markers);
             });
             let mut animation = self.animation.clone();
             plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
@@ -70,7 +92,7 @@ impl Render for MainView {
                         .unwrap();
                 }
             });
-            plot.update();
+            // plot.update();
         });
         div()
             .size_full()
