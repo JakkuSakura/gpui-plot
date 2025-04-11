@@ -7,7 +7,17 @@ pub struct Text {
     pub text: String,
 }
 impl Text {
-    pub fn render(&mut self, window: &mut Window, cx: &mut App) {
+    pub fn render(
+        &mut self,
+        window: &mut Window,
+        cx: &mut App,
+        pixel_bounds: Option<Bounds<Pixels>>,
+    ) {
+        if let Some(bounds) = pixel_bounds {
+            if !bounds.contains(&self.origin.into()) {
+                return;
+            }
+        }
         let shared_string = SharedString::from(self.text.clone());
         let shaped_line = window
             .text_system()
@@ -20,7 +30,7 @@ impl Text {
 }
 
 impl GeometryPixels for Text {
-    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
-        self.render(window, cx);
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        self.render(window, cx, Some(bounds));
     }
 }

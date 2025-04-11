@@ -10,7 +10,7 @@ impl<'a, X: AxisType, Y: AxisType> TicksView<'a, X, Y> {
     pub fn new(context: &'a AxesModel<X, Y>) -> Self {
         Self { context }
     }
-    pub fn render(&mut self, window: &mut Window, cx: &mut App) {
+    pub fn render(&mut self, window: &mut Window, cx: &mut App, pixel_bounds: Bounds<Pixels>) {
         let context = self.context;
         let size = px(12.0);
 
@@ -24,7 +24,7 @@ impl<'a, X: AxisType, Y: AxisType> TicksView<'a, X, Y> {
                 size,
                 text,
             }
-            .render(window, cx);
+            .render(window, cx, Some(pixel_bounds));
         }
         for y in context.grid.grid_y_lines.iter().cloned() {
             let text = y.format();
@@ -36,12 +36,12 @@ impl<'a, X: AxisType, Y: AxisType> TicksView<'a, X, Y> {
                 size,
                 text,
             }
-            .render(window, cx);
+            .render(window, cx, Some(pixel_bounds));
         }
     }
 }
 impl<'a, X: AxisType, Y: AxisType> GeometryPixels for TicksView<'a, X, Y> {
-    fn render_pixels(&mut self, _bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
-        self.render(window, cx);
+    fn render_pixels(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App) {
+        self.render(window, cx, bounds);
     }
 }

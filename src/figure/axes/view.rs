@@ -12,7 +12,7 @@ impl<'a, X: AxisType, Y: AxisType> AxesView<'a, X, Y> {
     pub fn new(model: &'a mut AxesModel<X, Y>) -> Self {
         Self { model }
     }
-    pub fn paint(&mut self, window: &mut Window, cx: &mut App) {
+    pub fn paint(&mut self, window: &mut Window, cx: &mut App, bounds: Bounds<Pixels>) {
         {
             let model = &self.model;
             let shrunk_bounds = model.pixel_bounds.into_bounds();
@@ -31,7 +31,7 @@ impl<'a, X: AxisType, Y: AxisType> AxesView<'a, X, Y> {
         let mut ticks = TicksView::new(self.model);
         {
             let (window, cx1) = cx1.cx.as_mut().unwrap();
-            ticks.render(window, cx1);
+            ticks.render(window, cx1, bounds);
         }
         let mut grid = GridView::new(&self.model.grid);
         {
@@ -55,6 +55,6 @@ impl<'a, X: AxisType, Y: AxisType> GeometryPixels for AxesView<'a, X, Y> {
             left: -CONTENT_BOARDER,
         });
         self.model.update_scale(shrunk_bounds);
-        self.paint(window, cx);
+        self.paint(window, cx, bounds);
     }
 }
