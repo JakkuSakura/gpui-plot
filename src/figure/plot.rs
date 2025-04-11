@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 pub struct PlotModel {
     pub panning: bool,
     pub zooming: bool,
-    pub zoom_pinch_precision: f64,
+    pub zoom_swipe_precision: f64,
     pub zoom_scroll_precision: f64,
     pub zoom_rubberband_precision: f64,
     pub fps: FpsModel,
@@ -30,7 +30,7 @@ impl Debug for PlotModel {
         f.debug_struct("PlotModel")
             .field("panning", &self.panning)
             .field("zooming", &self.zooming)
-            .field("zoom_pinch_precision", &self.zoom_pinch_precision)
+            .field("zoom_swipe_precision", &self.zoom_swipe_precision)
             .field("zoom_scroll_precision", &self.zoom_scroll_precision)
             .field("zoom_rubberband_precision", &self.zoom_rubberband_precision)
             .field("bounds", &self.bounds)
@@ -48,7 +48,7 @@ impl PlotModel {
         Self {
             panning: false,
             zooming: false,
-            zoom_pinch_precision: 1.0 / 200.0,
+            zoom_swipe_precision: 1.0 / 200.0,
             zoom_scroll_precision: 1.0 / 100.0,
             zoom_rubberband_precision: 1.0 / 400.0,
             fps: FpsModel::new(),
@@ -274,7 +274,7 @@ impl Render for PlotView {
                     ScrollDelta::Pixels(p) => {
                         // println!("Scroll event captured: {:?}", p);
                         // Swipe swipe down to zoom in. This is aligned with Google Maps and some tools like Mac Mouse Fix or Scroll Inverter
-                        -p.y.0 as f64 * model.zoom_pinch_precision
+                        -p.y.0 as f64 * model.zoom_swipe_precision
                     }
                     ScrollDelta::Lines(l) => {
                         // println!("Scroll event in lines {:?}, ignoring.",&q);
