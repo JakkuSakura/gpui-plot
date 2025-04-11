@@ -72,7 +72,6 @@ impl Render for MainView {
             });
             plot.update();
         });
-
         div()
             .size_full()
             .flex_col()

@@ -227,14 +227,17 @@ impl<T: AxisType> AxisRange<T> {
             max_to_base: max,
         }
     }
+    pub fn set_min(&mut self, min: T) {
+        self.min_to_base = (min - self.base).to_f64();
+    }
+    pub fn set_max(&mut self, max: T) {
+        self.max_to_base = (max - self.base).to_f64();
+    }
     pub fn min(&self) -> T {
         self.base + T::Delta::from_f64(self.min_to_base)
     }
     pub fn max(&self) -> T {
         self.base + T::Delta::from_f64(self.max_to_base)
-    }
-    pub fn min_in_f64(&self) -> f64 {
-        self.base.to_f64()
     }
 
     pub fn contains(&self, value: T) -> bool {
@@ -379,10 +382,16 @@ impl<X: AxisType, Y: AxisType> AxesBounds<X, Y> {
         Self { x, y }
     }
     pub fn resize(&mut self, factor: f64) {
-        self.x.min_to_base *= factor;
-        self.x.max_to_base *= factor;
-        self.y.min_to_base *= factor;
-        self.y.max_to_base *= factor;
+        let min_x = self.x.min_to_base;
+        let max_x = self.x.max_to_base;
+        let min_y = self.y.min_to_base;
+        let max_y = self.y.max_to_base;
+        let midpoint = point((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+        let size = point((max_x - min_x) * factor, (max_y - min_y) * factor);
+        self.x.min_to_base = midpoint.x - size.x / 2.0;
+        self.x.max_to_base = midpoint.x + size.x / 2.0;
+        self.y.min_to_base = midpoint.y - size.y / 2.0;
+        self.y.max_to_base = midpoint.y + size.y / 2.0;
     }
 
     pub fn transform_point(&self, bounds: AxesBoundsPixels, point: Point2<X, Y>) -> Point<Pixels> {
