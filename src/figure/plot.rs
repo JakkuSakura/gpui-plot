@@ -20,6 +20,7 @@ pub struct PlotModel {
     pub zooming: bool,
     pub zoom_pinch_precision: f64,
     pub zoom_scroll_precision: f64,
+    pub zoom_rubberband_precision: f64,
     pub fps: FpsModel,
     pub bounds: Bounds<Pixels>,
     pub axes: Vec<Box<dyn Axes>>,
@@ -31,6 +32,7 @@ impl Debug for PlotModel {
             .field("zooming", &self.zooming)
             .field("zoom_pinch_precision", &self.zoom_pinch_precision)
             .field("zoom_scroll_precision", &self.zoom_scroll_precision)
+            .field("zoom_rubberband_precision", &self.zoom_rubberband_precision)
             .field("bounds", &self.bounds)
             .field("axes", &self.axes.len())
             .finish()
@@ -48,6 +50,7 @@ impl PlotModel {
             zooming: false,
             zoom_pinch_precision: 1.0 / 200.0,
             zoom_scroll_precision: 1.0 / 100.0,
+            zoom_rubberband_precision: 1.0 / 400.0,
             fps: FpsModel::new(),
             bounds: Bounds::default(),
             axes: Vec::new(),
@@ -98,7 +101,6 @@ impl PlotModel {
         if !self.panning {
             return;
         }
-        self.panning = true;
         for axes in self.axes.iter_mut() {
             axes.pan(event);
         }
@@ -121,18 +123,19 @@ impl PlotModel {
             axes.zoom_begin(position);
         }
     }
-    pub fn zoom(&mut self, zoom_in: f64) {
+    pub fn zoom(&mut self, factor: f64) {
         if !self.zooming {
             return;
         }
         for axes in self.axes.iter_mut() {
-            axes.zoom(zoom_in);
+            axes.zoom(factor);
         }
     }
     pub fn zoom_end(&mut self) {
         if !self.zooming {
             return;
         }
+        self.zooming = false;
         for axes in self.axes.iter_mut() {
             axes.zoom_end();
         }
@@ -143,6 +146,7 @@ impl PlotModel {
 pub struct PlotView {
     pub model: Arc<RwLock<PlotModel>>,
     pub last_zoom_ts: Option<Instant>,
+    pub acc_zoom_in: f64,
     pub last_zoom_rb: Option<Point<Pixels>>,
 }
 impl PlotView {
@@ -150,6 +154,7 @@ impl PlotView {
         Self {
             model,
             last_zoom_ts: None,
+            acc_zoom_in: 0.0,
             last_zoom_rb: None,
         }
     }
@@ -159,6 +164,7 @@ impl PlotView {
             if last_time.elapsed() > Duration::from_secs_f32(0.2) {
                 self.model.write().zoom_end();
                 self.last_zoom_ts = None;
+                self.acc_zoom_in = 0.0;
             }
         }
     }
@@ -176,7 +182,9 @@ impl PlotView {
             model.zoom_begin(zoom_point);
         }
         self.last_zoom_ts = Some(Instant::now());
-        model.zoom(zoom_in);
+        self.acc_zoom_in += zoom_in;
+        let factor = self.acc_zoom_in.exp();
+        model.zoom(factor);
         cx.notify();
     }
     pub fn zoom_rubberband(
@@ -189,7 +197,9 @@ impl PlotView {
             return;
         };
         let delta = zoom_point.y - last_zoom_point.y;
-        self.model.write().zoom(delta.0 as f64);
+        let zoom_in = -delta.0 as f64 * self.model.read().zoom_rubberband_precision;
+        let factor = zoom_in.exp();
+        self.model.write().zoom(factor);
         cx.notify()
     }
 }
@@ -230,7 +240,6 @@ impl Render for PlotView {
                 }),
             )
             .on_mouse_move(cx.listener(|this, ev: &MouseMoveEvent, window, cx| {
-                // println!("Mouse move event captured: {:?}", ev);
                 match ev.pressed_button {
                     Some(MouseButton::Left) => {
                         let mut model = this.model.write();

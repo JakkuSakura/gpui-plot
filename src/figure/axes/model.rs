@@ -15,7 +15,6 @@ pub(crate) struct ZoomState<X: AxisType, Y: AxisType> {
     pixel_bounds: AxesBoundsPixels,
     initial_zoom_position: Point<Pixels>,
     zoom_point: Point<f64>,
-    accumulated_zoom_delta: f64,
 }
 
 pub enum ViewUpdateType {
@@ -181,13 +180,12 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
             initial_axes_bounds: self.axes_bounds,
             pixel_bounds: self.pixel_bounds,
             initial_zoom_position: position,
-            accumulated_zoom_delta: 0.0,
             zoom_point: self
                 .axes_bounds
                 .transform_point_reverse_f64(self.pixel_bounds, position),
         });
     }
-    fn zoom(&mut self, zoom_in: f64) {
+    fn zoom(&mut self, factor: f64) {
         if self.event_processed {
             return;
         }
@@ -195,8 +193,7 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
             return;
         };
         let zoom_point = zoom_state.zoom_point;
-        zoom_state.accumulated_zoom_delta += zoom_in;
-        let zoom_factor = zoom_state.accumulated_zoom_delta.exp();
+        let zoom_factor = factor;
 
         self.axes_bounds.x.min_to_base =
             (zoom_state.initial_axes_bounds.x.min_to_base - zoom_point.x) * zoom_factor
