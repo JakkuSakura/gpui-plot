@@ -17,6 +17,9 @@ use std::time::{Duration, Instant};
 
 pub struct PlotModel {
     pub panning: bool,
+    pub zooming: bool,
+    pub zoom_pinch_precision: f64,
+    pub zoom_scroll_precision: f64,
     pub fps: FpsModel,
     pub bounds: Bounds<Pixels>,
     pub axes: Vec<Box<dyn Axes>>,
@@ -25,6 +28,9 @@ impl Debug for PlotModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PlotModel")
             .field("panning", &self.panning)
+            .field("zooming", &self.zooming)
+            .field("zoom_pinch_precision", &self.zoom_pinch_precision)
+            .field("zoom_scroll_precision", &self.zoom_scroll_precision)
             .field("bounds", &self.bounds)
             .field("axes", &self.axes.len())
             .finish()
@@ -39,6 +45,9 @@ impl PlotModel {
     pub fn new() -> Self {
         Self {
             panning: false,
+            zooming: false,
+            zoom_pinch_precision: 1.0 / 200.0,
+            zoom_scroll_precision: 1.0 / 100.0,
             fps: FpsModel::new(),
             bounds: Bounds::default(),
             axes: Vec::new(),
@@ -76,6 +85,58 @@ impl PlotModel {
             axes.update();
         }
     }
+    pub fn pan_begin(&mut self, position: Point<Pixels>) {
+        if self.panning {
+            return;
+        }
+        self.panning = true;
+        for axes in self.axes.iter_mut() {
+            axes.pan_begin(position);
+        }
+    }
+    pub fn pan(&mut self, event: &MouseMoveEvent) {
+        if !self.panning {
+            return;
+        }
+        self.panning = true;
+        for axes in self.axes.iter_mut() {
+            axes.pan(event);
+        }
+    }
+    pub fn pan_end(&mut self) {
+        if !self.panning {
+            return;
+        }
+        self.panning = false;
+        for axes in self.axes.iter_mut() {
+            axes.pan_end();
+        }
+    }
+    pub fn zoom_begin(&mut self, position: Point<Pixels>) {
+        if self.zooming {
+            return;
+        }
+        self.zooming = true;
+        for axes in self.axes.iter_mut() {
+            axes.zoom_begin(position);
+        }
+    }
+    pub fn zoom(&mut self, zoom_in: f64) {
+        if !self.zooming {
+            return;
+        }
+        for axes in self.axes.iter_mut() {
+            axes.zoom(zoom_in);
+        }
+    }
+    pub fn zoom_end(&mut self) {
+        if !self.zooming {
+            return;
+        }
+        for axes in self.axes.iter_mut() {
+            axes.zoom_end();
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -93,28 +154,10 @@ impl PlotView {
         }
     }
 
-    pub fn pan_begin(&mut self, position: Point<Pixels>) {
-        for axes in self.model.write().axes.iter_mut() {
-            axes.pan_begin(position);
-        }
-    }
-    pub fn pan(&mut self, event: &MouseMoveEvent, _window: &mut Window, cx: &mut Context<Self>) {
-        for axes in self.model.write().axes.iter_mut() {
-            axes.pan(event);
-        }
-        cx.notify();
-    }
-    pub fn pan_end(&mut self) {
-        for axes in self.model.write().axes.iter_mut() {
-            axes.pan_end();
-        }
-    }
     fn try_clean_zoom(&mut self) {
         if let Some(last_time) = self.last_zoom_ts {
             if last_time.elapsed() > Duration::from_secs_f32(0.2) {
-                for axes in self.model.write().axes.iter_mut() {
-                    axes.zoom_end();
-                }
+                self.model.write().zoom_end();
                 self.last_zoom_ts = None;
             }
         }
@@ -123,34 +166,17 @@ impl PlotView {
     pub fn zoom(
         &mut self,
         zoom_point: Point<Pixels>,
-        delta: f64,
+        zoom_in: f64,
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) {
         self.try_clean_zoom();
         let mut model = self.model.write();
         if self.last_zoom_ts.is_none() {
-            for axes in model.axes.iter_mut() {
-                axes.zoom_begin(zoom_point);
-            }
+            model.zoom_begin(zoom_point);
         }
         self.last_zoom_ts = Some(Instant::now());
-        for axes in model.axes.iter_mut() {
-            axes.zoom(delta);
-        }
-        cx.notify();
-    }
-    pub fn zoom_rubberband_begin(
-        &mut self,
-        zoom_point: Point<Pixels>,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.try_clean_zoom();
-        self.last_zoom_rb = Some(zoom_point);
-        for axes in self.model.write().axes.iter_mut() {
-            axes.zoom_begin(zoom_point);
-        }
+        model.zoom(zoom_in);
         cx.notify();
     }
     pub fn zoom_rubberband(
@@ -163,17 +189,8 @@ impl PlotView {
             return;
         };
         let delta = zoom_point.y - last_zoom_point.y;
-        for axes in self.model.write().axes.iter_mut() {
-            axes.zoom(delta.0 as f64);
-        }
+        self.model.write().zoom(delta.0 as f64);
         cx.notify()
-    }
-    pub fn zoom_rubberband_end(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
-        self.last_zoom_rb = None;
-        for axes in self.model.write().axes.iter_mut() {
-            axes.zoom_end();
-        }
-        cx.notify();
     }
 }
 impl Render for PlotView {
@@ -201,67 +218,64 @@ impl Render for PlotView {
                 MouseButton::Left,
                 cx.listener(|this, ev: &MouseDownEvent, _window, _cx| {
                     let mut model = this.model.write();
-                    if !model.panning {
-                        model.panning = true;
-                        drop(model);
-                        this.pan_begin(ev.position);
-                    }
+                    model.pan_begin(ev.position);
                 }),
             )
             .on_mouse_down(
                 MouseButton::Right,
                 cx.listener(|this, ev: &MouseDownEvent, _window, _cx| {
-                    if this.last_zoom_rb.is_none() {
-                        this.zoom_rubberband_begin(ev.position, _window, _cx);
-                    }
+                    this.try_clean_zoom();
+                    this.last_zoom_rb = Some(ev.position);
+                    this.model.write().zoom_begin(ev.position);
                 }),
             )
-            .on_mouse_move(cx.listener(|this, ev, window, cx| {
-                let model = this.model.read();
-                if model.panning {
-                    drop(model);
-                    this.pan(ev, window, cx);
-                } else if this.last_zoom_rb.is_some() {
-                    drop(model);
-                    this.zoom_rubberband(ev.position, window, cx);
+            .on_mouse_move(cx.listener(|this, ev: &MouseMoveEvent, window, cx| {
+                // println!("Mouse move event captured: {:?}", ev);
+                match ev.pressed_button {
+                    Some(MouseButton::Left) => {
+                        let mut model = this.model.write();
+                        model.pan(ev);
+                        cx.notify();
+                    }
+                    // it won't work on MacOS
+                    Some(MouseButton::Right) => {
+                        this.zoom_rubberband(ev.position, window, cx);
+                    }
+                    _ => {}
                 }
             }))
             .on_mouse_up(
                 MouseButton::Left,
                 cx.listener(|this, _ev, _window, _cx| {
                     let mut model = this.model.write();
-
-                    if model.panning {
-                        model.panning = false;
-                        drop(model);
-                        this.pan_end();
-                    }
+                    model.pan_end();
                 }),
             )
             .on_mouse_up(
                 MouseButton::Right,
-                cx.listener(|this, _ev, _window, _cx| {
-                    this.zoom_rubberband_end(_window, _cx);
+                cx.listener(|this, _ev, _window, cx| {
+                    this.last_zoom_rb = None;
+                    this.model.write().zoom_end();
+                    cx.notify();
                 }),
             )
             .on_scroll_wheel(cx.listener(|this, ev: &ScrollWheelEvent, window, cx| {
-                let delta = match ev.delta {
+                let model = this.model.read();
+                let zoom_in = match ev.delta {
                     ScrollDelta::Pixels(p) => {
                         // println!("Scroll event captured: {:?}", p);
                         // Swipe swipe down to zoom in. This is aligned with Google Maps and some tools like Mac Mouse Fix or Scroll Inverter
-                        p.y.0 / 100.0
+                        -p.y.0 as f64 * model.zoom_pinch_precision
                     }
                     ScrollDelta::Lines(l) => {
                         // println!("Scroll event in lines {:?}, ignoring.",&q);
                         // Scroll up to zoom in
-                        -l.y / 30.0
+                        l.y as f64 * model.zoom_scroll_precision
                     }
                 };
-                // println!(
-                //     "Zooming at position: {:?} with delta: {}",
-                //     ev.position, delta
-                // );
-                this.zoom(ev.position, delta as f64, window, cx);
+                drop(model);
+
+                this.zoom(ev.position, zoom_in, window, cx);
             }))
     }
 }

@@ -187,7 +187,7 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
                 .transform_point_reverse_f64(self.pixel_bounds, position),
         });
     }
-    fn zoom(&mut self, delta: f64) {
+    fn zoom(&mut self, zoom_in: f64) {
         if self.event_processed {
             return;
         }
@@ -195,8 +195,8 @@ impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
             return;
         };
         let zoom_point = zoom_state.zoom_point;
-        zoom_state.accumulated_zoom_delta += delta;
-        let zoom_factor = (-zoom_state.accumulated_zoom_delta).exp();
+        zoom_state.accumulated_zoom_delta += zoom_in;
+        let zoom_factor = zoom_state.accumulated_zoom_delta.exp();
 
         self.axes_bounds.x.min_to_base =
             (zoom_state.initial_axes_bounds.x.min_to_base - zoom_point.x) * zoom_factor

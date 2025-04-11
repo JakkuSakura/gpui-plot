@@ -20,7 +20,7 @@ pub trait Axes: Any {
     fn pan(&mut self, event: &MouseMoveEvent);
     fn pan_end(&mut self);
     fn zoom_begin(&mut self, position: Point<Pixels>);
-    fn zoom(&mut self, zoom_out: f64);
+    fn zoom(&mut self, zoom_in: f64);
     fn zoom_end(&mut self);
     fn render(&mut self, bounds: Bounds<Pixels>, window: &mut Window, cx: &mut App);
 }
