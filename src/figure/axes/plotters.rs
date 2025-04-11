@@ -26,7 +26,7 @@ impl<X: AxisType, Y: AxisType> PlottersModel<X, Y> {
 }
 impl<X: AxisType, Y: AxisType> Axes for PlottersModel<X, Y> {
     fn update(&mut self) {
-        self.model.write().update();
+        self.model.write().update_range();
     }
 
     fn new_render(&mut self) {

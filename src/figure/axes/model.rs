@@ -85,7 +85,7 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         self.axes_bounds.transform_point(self.pixel_bounds, point)
     }
 
-    pub fn update(&mut self) {
+    pub fn update_range(&mut self) {
         self.update_type = ViewUpdateType::Auto;
         // update the axes bounds
         let mut new_axes_bounds = None;
@@ -122,19 +122,26 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
         };
         new_pixel_bounds.resize(1.1);
         self.axes_bounds = new_pixel_bounds;
-
+    }
+    pub fn update_grid(&mut self) {
         let cx1 = AxesContext::new_without_context(self);
         self.grid.update_grid(&cx1);
+    }
+    pub fn try_update_grid(&mut self) {
+        let cx1 = AxesContext::new_without_context(self);
+        self.grid.try_update_grid(&cx1);
     }
 }
 
 impl<X: AxisType, Y: AxisType> Axes for AxesModel<X, Y> {
     fn update(&mut self) {
-        self.update()
+        self.update_range();
+        self.update_grid();
     }
 
     fn new_render(&mut self) {
         self.event_processed = false;
+        self.try_update_grid();
     }
     fn pan_begin(&mut self, position: Point<Pixels>) {
         if matches!(self.update_type, ViewUpdateType::Fixed) {
