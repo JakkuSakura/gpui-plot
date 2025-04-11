@@ -92,9 +92,15 @@ impl<X: AxisType, Y: AxisType> AxesModel<X, Y> {
             let Some(x) = element.get_x_range() else {
                 continue;
             };
+            if x.size_in_f64() < 1e-6 {
+                continue;
+            }
             let Some(y) = element.get_y_range() else {
                 continue;
             };
+            if y.size_in_f64() < 1e-6 {
+                continue;
+            }
             match new_axes_bounds {
                 None => {
                     new_axes_bounds = Some(AxesBounds::new(x, y));
