@@ -14,7 +14,8 @@ use std::sync::Arc;
 #[allow(unused)]
 struct MainView {
     model: Arc<RwLock<FigureModel>>,
-    // animation: Animation,
+    axes_model: Arc<RwLock<AxesModel<f64, f64>>>,
+    animation: Animation,
     figure: Entity<FigureView>,
 }
 
@@ -22,42 +23,17 @@ impl MainView {
     fn new(_window: &mut Window, cx: &mut App) -> Self {
         let model = FigureModel::new("Example Figure".to_string());
         let model = Arc::new(RwLock::new(model));
-        let mut animation = Animation::new(0.0, 100.0, 0.1);
+        let animation = Animation::new(0.0, 100.0, 0.1);
 
         let axes_bounds = AxesBounds::new(AxisRange::new(0.0, 100.0), AxisRange::new(0.0, 100.0));
         let grid = GridModel::from_numbers(10, 10);
         let axes_model = Arc::new(RwLock::new(AxesModel::new(axes_bounds, grid)));
-        {
-            let mut model = model.write();
-            let mut plot = model.add_plot().write();
-            plot.add_axes(axes_model.clone())
-                .write()
-                .plot(animation.clone());
-            plot.add_axes_plotters(axes_model.clone(), move |area, cx| {
-                let mut chart = ChartBuilder::on(&area)
-                    .x_label_area_size(30)
-                    .y_label_area_size(30)
-                    .build_cartesian_2d(cx.axes_bounds.x.to_range(), cx.axes_bounds.y.to_range())
-                    .unwrap();
 
-                chart.configure_mesh().draw().unwrap();
-                for shift in 0..20 {
-                    let line = animation.next_line((shift * 5) as f64, false);
-
-                    chart
-                        .draw_series(LineSeries::new(
-                            line.points.iter().map(|p| (p.x, p.y)),
-                            &BLACK,
-                        ))
-                        .unwrap();
-                }
-            });
-            plot.update();
-        }
         Self {
             figure: cx.new(|_| FigureView::new(model.clone())),
+            axes_model: axes_model.clone(),
             model,
-            // animation,
+            animation,
         }
     }
 }
@@ -66,6 +42,36 @@ impl Render for MainView {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let id = cx.entity_id();
         cx.defer(move |app| app.notify(id));
+
+        let mut model = self.model.write();
+        model.clear_plots();
+        let mut plot = model.add_plot().write();
+        plot.clear_axes();
+        self.axes_model.write().clear_elements();
+        plot.add_axes(self.axes_model.clone())
+            .write()
+            .plot(self.animation.clone());
+        let mut animation = self.animation.clone();
+        plot.add_axes_plotters(self.axes_model.clone(), move |area, cx| {
+            let mut chart = ChartBuilder::on(&area)
+                .x_label_area_size(30)
+                .y_label_area_size(30)
+                .build_cartesian_2d(cx.axes_bounds.x.to_range(), cx.axes_bounds.y.to_range())
+                .unwrap();
+
+            chart.configure_mesh().draw().unwrap();
+            for shift in 0..20 {
+                let line = animation.next_line((shift * 5) as f64, false);
+
+                chart
+                    .draw_series(LineSeries::new(
+                        line.points.iter().map(|p| (p.x, p.y)),
+                        &BLACK,
+                    ))
+                    .unwrap();
+            }
+        });
+        plot.update();
 
         div()
             .size_full()
