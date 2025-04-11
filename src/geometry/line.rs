@@ -81,7 +81,9 @@ impl Line<Pixels, Pixels> {
                         line.add_point(point);
                         i += 1;
                     }
-                    line.render(window, _cx, None);
+                    if line.points.len() > 1 {
+                        line.render(window, _cx, None);
+                    }
                     line.clear();
                 }
             }
