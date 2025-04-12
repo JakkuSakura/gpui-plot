@@ -47,8 +47,11 @@ impl<'a, X: AxisType, Y: AxisType> AxesContext<'a, X, Y> {
     pub fn transform_point(&self, point: Point2<X, Y>) -> Point<Pixels> {
         self.axes_bounds.transform_point(self.pixel_bounds, point)
     }
-    pub fn plot(&mut self, mut element: impl GeometryAxes<X = X, Y = Y> + 'static) {
-        element.render_axes(self);
+    pub fn plot<T>(&mut self, mut element: impl AsMut<T>)
+    where
+        T: GeometryAxes<X = X, Y = Y>,
+    {
+        element.as_mut().render_axes(self);
     }
     pub fn contains(&self, point: Point2<X, Y>) -> bool {
         self.axes_bounds.contains(point)
